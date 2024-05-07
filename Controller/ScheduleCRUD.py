@@ -1,16 +1,7 @@
+from typing import Optional, Tuple
+
 from Model.Schedule import *
 from Controller.EmployeCRUD import *
-
-
-
-
-
-
-
-
-
-
-
 
 
 # region Create_Schedule!!!
@@ -20,7 +11,7 @@ def createSchedule(schedule: Schedule) -> bool:
     try:
         cursor.execute("""SELECT COUNT(*) FROM SCHEDULES 
                               WHERE employeeID = ? AND checkDay = ? AND beginningTime IS NOT NULL""",
-                       (schedule.employeeID, schedule.checkDay))
+                       (schedule.employeeImage, schedule.checkDay))
         countCheckin = cursor.fetchone()[0]
         if countCheckin >= maxCheckinPerDay:
             print("You've reached the maximum number of check-ins for today.")
@@ -28,16 +19,16 @@ def createSchedule(schedule: Schedule) -> bool:
 
         cursor.execute("""SELECT COUNT(*) FROM SCHEDULES 
                               WHERE employeeID = ? AND checkDay = ? AND endingTime IS NOT NULL""",
-                       (schedule.employeeID, schedule.checkDay))
+                       (schedule.employeeImage, schedule.checkDay))
         countCheckOut = cursor.fetchone()[0]
         if countCheckOut >= maxCheckOutPerDay:
             print("You've reached the maximum number of check-outs for today.")
             return False
 
         cursor.execute("""INSERT INTO SCHEDULES(employeeID, checkDay, beginningTime) VALUES (?,?,?)""",
-                       (schedule.employeeID, schedule.checkDay, schedule.beginningTime))
+                       (getEmployeeIDByImage(schedule.employeeImage), schedule.checkDay, schedule.beginningTime))
         conn.commit()
-        print(f"Welcome {getEmployeeNameByID(schedule.employeeID)}!\nIt's a new day, meaning new challenges!")
+        print(f"Welcome {getEmployeeNameByID(schedule.employeeImage)}!\nIt's a new day, meaning new challenges!")
         return True
     except Exception as e:
         print(f"An error occurred while creating schedule: {e}")
@@ -54,7 +45,8 @@ def getSchedules() -> list | None:
         schedules = cursor.fetchall()
         if schedules:
             for scdl in schedules:
-                schedule = Schedule(scdl[0], scdl[1], scdl[2], scdl[3], scdl[4])
+                schedule = Schedule(ID=scdl[0], employeeImage=getEmployeeImageByID(scdl[1]), beginningTime=scdl[2], endingTime=scdl[3],
+                                    checkDay=scdl[4])
                 schedulesList.append(schedule)
             return schedulesList
         else:
@@ -143,4 +135,33 @@ def checkOut(image: str) -> bool:
     except Exception as e:
         print(f"An error occurred while checking out: {e}")
         return False
+
+
+# endregion
+
+# region getLastCheckinOrLastCheckout
+def getLastCheckinOrLastCheckout() -> list[str]:
+    schedules = getSchedules()
+    if schedules:
+        lastSchedule: Schedule = schedules[-1]
+        empID = getEmployeeIDByImage(lastSchedule.employeeImage)
+        empImage = lastSchedule.employeeImage
+        empName = getEmployeeNameByID(empID)
+        endingTime = lastSchedule.endingTime
+        beginningTime = lastSchedule.beginningTime
+
+        lastCheck = [empID, empImage, empName]
+        if lastSchedule.ID:
+            if lastSchedule.endingTime:
+                status = "CheckOut"
+                lastCheck.append(endingTime)
+                lastCheck.append(status)
+                return lastCheck
+            else:
+                status = "CheckIn"
+                lastCheck.append(beginningTime)
+                lastCheck.append(status)
+                return lastCheck
+    return ["", "", "", "", ""]
+
 # endregion

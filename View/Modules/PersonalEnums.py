@@ -1,4 +1,5 @@
 import math
+import re
 from enum import Enum
 from flet import *
 
@@ -30,7 +31,6 @@ class PoppinsFont(Enum):
     BLACK = "../assets/fonts/Poppins/Poppins-Black.ttf"
     BLACK_ITALIC = "../assets/fonts/Poppins/Poppins-BlackItalic.ttf"
     BOLD = "../assets/fonts/Poppins/Poppins-Bold.ttf"
-
     BOLD_ITALIC = "../assets/fonts/Poppins/Poppins-BoldItalic.ttf"
     EXTRA_BOLD = "../assets/fonts/Poppins/Poppins-ExtraBold.ttf"
     EXTRA_BOLD_ITALIC = "../assets/fonts/Poppins/Poppins-ExtraBoldItalic.ttf"
@@ -45,3 +45,15 @@ class PoppinsFont(Enum):
     SEMI_BOLD_ITALIC = "../assets/fonts/Poppins/Poppins-SemiBoldItalic.ttf"
     THIN = "../assets/fonts/Poppins/Poppins-Thin.ttf"
     THIN_ITALIC = "../assets/fonts/Poppins/Poppins-ThinItalic.ttf"
+
+
+class ValidateReg(Enum):
+    USERNAME = (r"^\w+$", "Invalid username")
+    EMAIL = (r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', "Email format must be xxxxx@exemple.xxx")
+    PASSWORD = (r'\w{8,}', "Password must be at least 8 characters long and contain at least 1 letter and 1 digit")
+    FIRST_LAST_NAME = (r'^[a-zA-Z]{2,}$', "First name must contain at least 2 letters")
+    AGE = (r'^\d{1,100}$', "Age must be between 1 and 100")
+
+    @classmethod
+    def validate(cls, value, pattern):
+        return re.match(pattern, value) is not None

@@ -2,6 +2,9 @@ from Containers import *
 
 from Model.ConnectionToDB import *
 
+from AnimatedControllers import *
+
+
 def navigate(e):
     match e.control.selected_index:
         case 0:
@@ -49,22 +52,14 @@ def main(page: Page):
         fontDicts[str(font)] = font.value
 
     page.fonts = fontDicts
-
+    # print("page->",page)
     def route_change(route):
         page.views.clear()
         page.views.append(
             View(
                 "/",
                 [
-                    Container(
-                        image_src=f"../assets/bgLeftNavBar.jpg",
-                        image_fit=ImageFit.COVER,
-                        alignment=alignment.center,
-                        expand=True,
-                        content=ManagerLogin(
-                            bgColor=colors.with_opacity(color=colors.BLACK, opacity=0.5)
-                        )
-                    ),
+                    ManagerTransactions(page)
                 ],
                 padding=0
             )

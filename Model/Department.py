@@ -1,13 +1,6 @@
 from Model.ConnectionToDB import *
 
 
-
-
-
-
-
-
-
 class Department:
     def __init__(self, ID: int = 0,
                  name: str = "",

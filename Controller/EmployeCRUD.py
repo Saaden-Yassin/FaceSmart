@@ -50,8 +50,8 @@ def getEmployees() -> list | None:
     employees = cursor.fetchall()
     if employees:
         for emp in employees:
-            employee = Employee(ID=emp[0], firstName=emp[1], lastName=emp[2], age=emp[3], email=emp[4], image=emp[5],
-                                departmentName=emp[6], projectName=emp[7], status=emp[9])
+            employee = Employee(ID=emp[0], firstName=emp[1], lastName=emp[2], age=emp[3], email=emp[4],
+                                image=emp[5], departmentName=emp[6], projectName=emp[7], status=emp[9])
             employeesList.append(employee)
         return employeesList
     else:
@@ -60,10 +60,9 @@ def getEmployees() -> list | None:
 
 # endregion
 
-
 # region Update_Employee!!!
 def updateEmployee(ID: int, firstName: str = None, lastName: str = None, age: int = None, email: str = None,
-                   image: str = None, departmentName: str = None, projectName: str = None):
+                   image: str = None, departmentName: str = None, projectName: str = None) -> bool:
     # region update EmployeesTable
     sql: str = "UPDATE EMPLOYEES SET "
     parameters = []
@@ -91,9 +90,12 @@ def updateEmployee(ID: int, firstName: str = None, lastName: str = None, age: in
     sql = sql[:-2]
     sql += " WHERE ID = ?"
     parameters.append(ID)
-    cursor.execute(sql, tuple(parameters))
+    if cursor.execute(sql, tuple(parameters)):
+        conn.commit()
+        return True
+    else:
+        return False
     # endregion
-    conn.commit()
 
 
 # endregion
@@ -102,7 +104,10 @@ def updateEmployee(ID: int, firstName: str = None, lastName: str = None, age: in
 def deleteEmployee(ID: int):
     try:
         # region Delete the employee's schedules
-        # cursor.execute("DELETE FROM SCHEDULES WHERE employeeID = ?", (ID,))
+        cursor.execute("""SELECT * FROM SCHEDULES WHERE employeeID = ?""", (ID,))
+        result = cursor.fetchall()
+        if result:
+            cursor.execute("DELETE FROM SCHEDULES WHERE employeeID = ?", (ID,))
         # endregion
 
         # region Delete_Employee_From_EmployeesList_In_ProjectsTable
@@ -265,5 +270,22 @@ def getEmployeesTableSorted(criteria: str = "ID", sortMode: str = "ASC"):
             return None
     except sqlite3.Error as e:
         print("Error retrieving sorted employees:", e)
+        return None
+
+
+# endregion
+
+# region getEmployeeImageByID
+def getEmployeeImageByID(ID: int) -> str | None:
+    try:
+        cursor.execute("""SELECT image FROM EMPLOYEES WHERE ID = ?""", (ID,))
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            print("Employee with given ID not found")
+            return None
+    except sqlite3.Error as e:
+        print("Error fetching employee image by ID:", e)
         return None
 # endregion

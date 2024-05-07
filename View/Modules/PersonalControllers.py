@@ -1,16 +1,13 @@
 import base64
 import calendar
 import concurrent.futures
-from datetime import datetime
 
-import cv2
-import numpy as np
 import requests
 
 from AnimatedControllers import *
+from Controller.EmployeCRUD import *
 from PersonalEnums import *
 from View.Modules.Containers import EmployeesList
-from Controller.EmployeCRUD import *
 
 
 # region ProjectInfoContainer
@@ -331,9 +328,10 @@ class Calendar(Container):
 class EmployeesInOutContainer(Container):
     def __init__(self, col: dict[str, int | float] | int | float = None, height: int | float | None = 300,
                  width: int | float = None,
-                 roundedAvatarUrl: str | None = "https://avatars.githubusercontent.com/u/5041459?s=88&v=4",
-                 roundedAvatarSize: tuple[int, int] = (50, 50), employeeID: str = "ID value",
-                 employeeName: str = "Employee name", hour: str = "00:00:00", checkIn=False
+                 circleImageBase64Src: str | bool | None = False,
+                 circleImageSize: tuple[int, int] = (50, 50), employeeID: str | None = "ID value",
+                 employeeName: str | None = "Employee name", hour: str | None = "00:00:00",
+                 check: str | None = "checkOut"
                  ):
         super().__init__()
         self.col = col
@@ -344,6 +342,11 @@ class EmployeesInOutContainer(Container):
         self.border = border.all(width=2, color=colors.WHITE)
         self.bgcolor = colors.BLACK
         self.expand = True
+        self.check = check
+        self.hour = hour
+        self.employeeName = employeeName
+        self.employeeID = employeeID
+        self.circleImageBase64Src = circleImageBase64Src
         self.content = Column(
             spacing=15,
             controls=[
@@ -368,12 +371,11 @@ class EmployeesInOutContainer(Container):
                 Row(
                     alignment=MainAxisAlignment.CENTER,
                     controls=[
-                        CircleAvatar(
-                            height=roundedAvatarSize[1],
-                            width=roundedAvatarSize[0],
-                            foreground_image_url=roundedAvatarUrl,
-                        ),
-
+                        CircleEmployeeImage(
+                            height=circleImageSize[1],
+                            width=circleImageSize[0],
+                            imageSrcBase64=self.circleImageBase64Src,
+                        )
                     ]
                 ),
                 Row(
@@ -381,7 +383,7 @@ class EmployeesInOutContainer(Container):
                     controls=[
                         Text(
                             text_align=TextAlign.CENTER,
-                            value=employeeName,
+                            value=self.employeeName,
                             font_family=str(PoppinsFont.MEDIUM),
                             size=16.01
                         )
@@ -397,7 +399,7 @@ class EmployeesInOutContainer(Container):
                             size=16.01,
                         ),
                         Text(
-                            value=employeeID,
+                            value=self.employeeID,
                             font_family=str(PoppinsFont.BOLD),
                             size=16.01,
                         )
@@ -413,7 +415,7 @@ class EmployeesInOutContainer(Container):
                             size=16.01,
                         ),
                         Text(
-                            value=hour,
+                            value=self.hour,
                             text_align=TextAlign.END,
                             font_family=str(PoppinsFont.BOLD),
                             size=16.01,
@@ -430,10 +432,10 @@ class EmployeesInOutContainer(Container):
                         ),
                         Container(
                             padding=padding.all(5),
-                            bgcolor="#B5FF57",
+                            bgcolor="#B5FF57" if self.check == "checkIn" else colors.RED,
                             border_radius=10,
                             content=Text(
-                                value="Check In" if checkIn else "Check Out",
+                                value=self.check,
                                 color=colors.BLACK,
                                 font_family=str(PoppinsFont.BOLD),
                                 size=16.01,
@@ -557,7 +559,7 @@ class DashBoardImage(Container):
 # region TableHeadingContainer
 class TableHeadingContainer(Container):
     def __init__(self, textValue: str = "header", color: str = None, enableSort: bool = False,
-                 enableFilter: bool = False):
+                 enableFilter: bool = False, onSortClick: Any = None):
         super().__init__()
         self.content = Row(
             alignment=MainAxisAlignment.CENTER,
@@ -576,6 +578,7 @@ class TableHeadingContainer(Container):
                             icon=icons.SORT_BY_ALPHA_ROUNDED,
                             icon_size=16.1,
                             visible=enableSort,
+                            on_click=onSortClick
                         ),
                         IconButton(
                             icon=icons.ARROW_DROP_DOWN,
@@ -677,12 +680,7 @@ class AddEmployeeDialog(AlertDialog):
         self.content_padding = 0
         self.actions_padding = 0
         self.employeesList = employeesList
-        self.pickedEncodedImage: str = ""
         self.selectedDepartment: str = ""
-        self.pickImageDialog = FilePicker(on_result=self.pickImage)
-        self.employeesList.page.overlay.append(self.pickImageDialog)
-        self.employeesList.page.update()
-        self.selectedEncodedImages: str = ""
         self.dialogImage = Image(
             src=f"../assets/eye.png",
             width=120,
@@ -744,6 +742,31 @@ class AddEmployeeDialog(AlertDialog):
                 shape=RoundedRectangleBorder(radius=10)
             ),
         )
+        self.localImagePicker = LocalImagePicker(
+            rootPage=self.employeesList.page,
+            btnPickImage=FilledButton(
+                content=Row(
+                    controls=[
+                        Icon(
+                            name=icons.UPLOAD_FILE_ROUNDED,
+                            color=colors.WHITE
+                        ),
+                        Text(
+                            value="Click to upload image",
+                            font_family=str(PoppinsFont.BOLD),
+                            color=colors.WHITE
+                        )
+                    ]
+                ),
+                height=55,
+                style=ButtonStyle(
+                    bgcolor=colors.TRANSPARENT,
+                    shape=RoundedRectangleBorder(radius=15),
+                    side=BorderSide(width=1, color=colors.BLACK),
+                )
+            ),
+            showPickedImageName=self.imageSelectedMsg,
+        )
         self.content = Column(
             scroll=ScrollMode.ALWAYS,
             controls=[
@@ -762,29 +785,7 @@ class AddEmployeeDialog(AlertDialog):
                             self.dialogTFEmail,
                             self.dialogDDDepartment,
                             self.dialogTFCurrentProject,
-                            FilledButton(
-                                content=Row(
-                                    controls=[
-                                        Icon(
-                                            name=icons.UPLOAD_FILE_ROUNDED,
-                                            color=colors.WHITE
-                                        ),
-                                        Text(
-                                            value="Click to upload image",
-                                            font_family=str(PoppinsFont.BOLD),
-                                            color=colors.WHITE
-                                        )
-                                    ]
-                                ),
-                                height=55,
-                                style=ButtonStyle(
-                                    bgcolor=colors.TRANSPARENT,
-                                    shape=RoundedRectangleBorder(radius=15),
-                                    side=BorderSide(width=1, color=colors.BLACK),
-                                ),
-                                on_click=lambda _: self.pickImageDialog.pick_files(),
-                            ),
-                            self.imageSelectedMsg,
+                            self.localImagePicker,
                             Row(
                                 alignment=MainAxisAlignment.CENTER,
                                 controls=[
@@ -811,25 +812,29 @@ class AddEmployeeDialog(AlertDialog):
             ]
         )
 
-    def pickImage(self, e: FilePickerResultEvent):
-        if not e.files == "":
-            try:
-                with open(e.files[0].path, "rb") as image_file:
-                    self.pickedEncodedImage = base64.b64encode(image_file.read()).decode()
-                    self.imageSelectedMsg.value = e.files[0].name
-            except Exception as e:
-                print(e)
-                print("YOU HAVE PROBLEM HERE !!!!")
-        else:
-            self.imageSelectedMsg.value = "Image not found"
-        self.imageSelectedMsg.update()
-
     def selectDepartment(self, e):
         self.selectedDepartment = self.dialogDDDepartment.value
 
     def closeDialog(self, e):
         self.open = False
         self.employeesList.page.update()
+
+
+# endregion
+
+# region CircleEmployeeImage
+class CircleEmployeeImage(Container):
+    def __init__(self, imageSrcBase64: str | bool = False, width: int | float = 45, height: int | float = 45):
+        super().__init__()
+        if not imageSrcBase64:
+            self.image_src = f"../assets/profile.jpg"
+        else:
+            self.image_src_base64 = imageSrcBase64
+        self.image_repeat = ImageRepeat.NO_REPEAT
+        self.image_fit = ImageFit.COVER
+        self.width = width
+        self.height = height
+        self.border_radius = 40
 
 
 # endregion
@@ -848,14 +853,14 @@ class EmployeeDataRow(DataRow):
             width=250,
             text_align=TextAlign.CENTER,
         )
-        self.image = Image(
-            filter_quality=FilterQuality.HIGH,
-            fit=ImageFit.COVER,
-            src_base64=imageSrcBase64,
-            width=45,
-            height=45,
-            repeat=ImageRepeat.NO_REPEAT
-        )
+        # self.image = Image(
+        #     filter_quality=FilterQuality.HIGH,
+        #     fit=ImageFit.COVER,
+        #     src_base64=imageSrcBase64,
+        #     width=45,
+        #     height=45,
+        #     repeat=ImageRepeat.NO_REPEAT
+        # )
         self.tf_firstName = TextField(
             value=firstName,
             width=250,
@@ -935,9 +940,8 @@ class EmployeeDataRow(DataRow):
                     content=Row(
                         alignment=MainAxisAlignment.CENTER,
                         controls=[
-                            Container(
-                                border_radius=40,
-                                content=self.image
+                            CircleEmployeeImage(
+                                imageSrcBase64=imageSrcBase64
                             )
                         ]
                     )
@@ -991,7 +995,7 @@ class EmployeeDataRow(DataRow):
     def updateFirstName(self, e):
         self.tf_firstName.disabled = False
         self.tf_firstName.value = ""
-        self.tf_firstName.hint_text = "Enter new value..."
+        self.tf_firstName.hint_text = "Enter new first name..."
         self.tf_firstName.border_width = 1
         self.tf_firstName.on_submit = lambda _: self.updateEffectFirstName(firstName=self.tf_firstName.value)
         self.tf_firstName.update()
@@ -1007,9 +1011,9 @@ class EmployeeDataRow(DataRow):
     def updateLastName(self, e):
         self.tf_lastName.disabled = False
         self.tf_lastName.value = ""
-        self.tf_lastName.hint_text = "Enter new value..."
+        self.tf_lastName.hint_text = "Enter new last name..."
         self.tf_lastName.border_width = 1
-        self.tf_lastName.on_submit = lambda _: self.updateEffectFirstName(firstName=self.tf_lastName.value)
+        self.tf_lastName.on_submit = lambda _: self.updateEffectLastName(lastName=self.tf_lastName.value)
         self.tf_lastName.update()
 
     def updateEffectLastName(self, lastName: str):
@@ -1023,7 +1027,7 @@ class EmployeeDataRow(DataRow):
     def updateAge(self, e):
         self.tf_age.disabled = False
         self.tf_age.value = ""
-        self.tf_age.hint_text = "Enter new value..."
+        self.tf_age.hint_text = "Enter new age..."
         self.tf_age.border_width = 1
         self.tf_age.on_submit = lambda _: self.updateEffectAge(age=self.tf_age.value)
         self.tf_age.update()
@@ -1039,7 +1043,7 @@ class EmployeeDataRow(DataRow):
     def updateEmail(self, e):
         self.tf_email.disabled = False
         self.tf_email.value = ""
-        self.tf_email.hint_text = "Enter new value..."
+        self.tf_email.hint_text = "Enter new email..."
         self.tf_email.border_width = 1
         self.tf_email.on_submit = lambda _: self.updateEffectEmail(email=self.tf_email.value)
         self.tf_email.update()
@@ -1055,7 +1059,7 @@ class EmployeeDataRow(DataRow):
     def updateDepartment(self, e):
         self.tf_department.disabled = False
         self.tf_department.value = ""
-        self.tf_department.hint_text = "Enter new value..."
+        self.tf_department.hint_text = "Enter new department..."
         self.tf_department.border_width = 1
         self.tf_department.on_submit = lambda _: self.updateEffectDepartment(departmentName=self.tf_department.value)
         self.tf_department.update()
@@ -1071,7 +1075,7 @@ class EmployeeDataRow(DataRow):
     def updateProjectName(self, e):
         self.tf_currentProject.disabled = False
         self.tf_currentProject.value = ""
-        self.tf_currentProject.hint_text = "Enter new value..."
+        self.tf_currentProject.hint_text = "Enter new current project..."
         self.tf_currentProject.border_width = 1
         self.tf_currentProject.on_submit = lambda _: self.updateEffectProjectName(
             projectName=self.tf_currentProject.value)
@@ -1086,6 +1090,51 @@ class EmployeeDataRow(DataRow):
 
     def deleteEmployee(self, e):
         deleteEmployee(ID=int(self.t_id.value))
+        self.dataTable.rows.remove(self)
         self.dataTable.update()
 
+
+# endregion
+
+# region LocalImagePicker
+class LocalImagePicker(Container):
+    def __init__(self, rootPage: Page, btnPickImage: FilledButton, showPickedImageName: Text,
+                 margin_: int | float | Margin = None):
+        super().__init__()
+        self.rootPage = rootPage
+        self.margin = margin_
+        self.showPickedImageName = showPickedImageName
+        self.btnPickImage = btnPickImage
+        self.pickedEncodedImage: str = ""
+        self.selectedDepartment: str = ""
+        self.pickImageDialog = FilePicker(on_result=self.pickImage)
+        if self.rootPage:
+            self.rootPage.overlay.append(self.pickImageDialog)
+            self.rootPage.update()
+        self.btnPickImage.on_click = lambda _: self.pickImageDialog.pick_files()
+        self.content = Column(
+            horizontal_alignment=CrossAxisAlignment.CENTER,
+            controls=[
+                self.btnPickImage,
+                self.showPickedImageName
+            ]
+        )
+
+    def pickImage(self, e: FilePickerResultEvent):
+        if not e.files == "":
+            try:
+                with open(e.files[0].path, "rb") as image_file:
+                    self.pickedEncodedImage = base64.b64encode(image_file.read()).decode()
+                    self.showPickedImageName.value = e.files[0].name
+            except Exception as e:
+                print(e)
+                print("YOU HAVE PROBLEM HERE !!!!")
+        else:
+            self.showPickedImageName.value = "Image not found !!!"
+        self.showPickedImageName.update()
+
+    def getPickedEncodedImage(self):
+        if self.pickedEncodedImage:
+            return self.pickedEncodedImage
+        return ""
 # endregion

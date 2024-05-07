@@ -1,6 +1,7 @@
-from Controller.EmployeCRUD import *
 from PersonalControllers import *
 from PersonalEnums import AppColors
+from Controller.ManagerCRUD import *
+from Controller.ScheduleCRUD import *
 
 
 # region DashBoardContent
@@ -117,8 +118,8 @@ class DashBoardContent(Column):
                                                                 titleColor="#65B0FF",
                                                                 shadowColor="#65B0FF",
                                                                 iconColor="#0012FF",
-                                                                nbrEmployees=1500,
-                                                                totalEmployees=1500,
+                                                                nbrEmployees=getTotalNumberOfEmployees(),
+                                                                totalEmployees=getTotalNumberOfEmployees(),
                                                                 progressIndicatorBgColor="#160364",
                                                                 progressIndicatorColor="#5584FF",
                                                                 progressBarColor="#3300FE",
@@ -131,8 +132,8 @@ class DashBoardContent(Column):
                                                                 shadowColor="#93FFAE",
                                                                 iconName=icons.GROUP_ADD_ROUNDED,
                                                                 iconColor="#00FE40",
-                                                                nbrEmployees=1000,
-                                                                totalEmployees=1500,
+                                                                nbrEmployees=getNumberEmployeesActive(),
+                                                                totalEmployees=getTotalNumberOfEmployees(),
                                                                 progressIndicatorBgColor="#0A2F0B",
                                                                 progressIndicatorColor="#6DFF55",
                                                                 progressBarColor="#00FE40",
@@ -145,8 +146,8 @@ class DashBoardContent(Column):
                                                                 shadowColor="#FF7373",
                                                                 iconName=icons.GROUP_REMOVE_ROUNDED,
                                                                 iconColor="#FF0000",
-                                                                nbrEmployees=500,
-                                                                totalEmployees=1500,
+                                                                nbrEmployees=getNumberEmployeesInactive(),
+                                                                totalEmployees=getTotalNumberOfEmployees(),
                                                                 progressIndicatorBgColor="#441717",
                                                                 progressIndicatorColor="#FF0000",
                                                                 progressBarColor="#FF0000",
@@ -158,7 +159,12 @@ class DashBoardContent(Column):
                                             ]
                                         ),
                                         EmployeesInOutContainer(
-                                            col=3
+                                            col=3,
+                                            employeeID=getLastCheckinOrLastCheckout()[0],
+                                            circleImageBase64Src=getLastCheckinOrLastCheckout()[1],
+                                            employeeName=getLastCheckinOrLastCheckout()[2],
+                                            hour=getLastCheckinOrLastCheckout()[3],
+                                            check=getLastCheckinOrLastCheckout()[4]
                                         )
                                     ]
                                 )
@@ -172,7 +178,6 @@ class DashBoardContent(Column):
 
 # endregion
 
-
 # region EmployeesList
 class EmployeesList(Container):
     def __init__(self):
@@ -180,6 +185,7 @@ class EmployeesList(Container):
         self.padding = 16
         self.dataRows = []
         self.bgcolor = colors.TRANSPARENT
+        self.isAscendant: bool = False
         self.animatedSearchBar = AnimatedSearchBar()
         self.animatedSearchBar.onChange(self.searchEmployee)
         self.dataTable = DataTable(
@@ -205,6 +211,7 @@ class EmployeesList(Container):
                         textValue="ID",
                         color="#C55D42",
                         enableSort=True,
+                        onSortClick=lambda _: self.sortEmployeesList(sortCriteria="ID")
                     ),
                 ),
                 DataColumn(
@@ -212,6 +219,7 @@ class EmployeesList(Container):
                         textValue="First name",
                         color="#C55D42",
                         enableSort=True,
+                        onSortClick=lambda _: self.sortEmployeesList(sortCriteria="firstName")
                     ),
                 ),
                 DataColumn(
@@ -219,6 +227,7 @@ class EmployeesList(Container):
                         textValue="Last name",
                         color="#C55D42",
                         enableSort=True,
+                        onSortClick=lambda _: self.sortEmployeesList(sortCriteria="lastName")
                     ),
                 ),
                 DataColumn(
@@ -227,6 +236,7 @@ class EmployeesList(Container):
                         textValue="Age",
                         color="#C55D42",
                         enableSort=True,
+                        onSortClick=lambda _: self.sortEmployeesList(sortCriteria="age")
                     ),
                 ),
                 DataColumn(
@@ -234,6 +244,7 @@ class EmployeesList(Container):
                         textValue="Email",
                         color="#C55D42",
                         enableSort=True,
+                        onSortClick=lambda _: self.sortEmployeesList(sortCriteria="email")
                     ),
                 ),
                 DataColumn(
@@ -241,7 +252,8 @@ class EmployeesList(Container):
                         textValue="Department",
                         color="#C55D42",
                         enableSort=True,
-                        enableFilter=True
+                        onSortClick=lambda _: self.sortEmployeesList(sortCriteria="departmentId"),
+                        enableFilter=True,
                     ),
                 ),
                 DataColumn(
@@ -249,6 +261,7 @@ class EmployeesList(Container):
                         textValue="Current project",
                         color="#C55D42",
                         enableSort=True,
+                        onSortClick=lambda _: self.sortEmployeesList(sortCriteria="projectId"),
                         enableFilter=True
                     ),
                 ),
@@ -302,7 +315,6 @@ class EmployeesList(Container):
                     expand=True,
                     controls=[
                         Row(
-                            # expand=True,
                             scroll=ScrollMode.ADAPTIVE,
                             controls=[
                                 self.dataTable
@@ -312,6 +324,35 @@ class EmployeesList(Container):
                 )
             ]
         )
+
+    def sortEmployeesList(self, sortCriteria: str = id):
+        self.isAscendant = not self.isAscendant
+        flag = self.isAscendant
+        sortdEmployees = getEmployeesTableSorted(
+            criteria=sortCriteria,
+            sortMode="ASC" if flag else "DESC"
+        )
+        self.dataRows.clear()
+        self.dataRows.extend(
+            map(
+                lambda emp: (
+                    EmployeeDataRow(
+                        id=emp.ID,
+                        imageSrcBase64=emp.image,
+                        firstName=emp.firstName,
+                        lastName=emp.lastName,
+                        age=emp.age,
+                        email=emp.email,
+                        department=emp.departmentName,
+                        currentProject=emp.projectName,
+                        status=emp.status,
+                        dataTable=self.dataTable
+                    )
+                ),
+                sortdEmployees
+            )
+        )
+        self.update()
 
     def did_mount(self):
         Thread(target=self.loadData, daemon=True).start()
@@ -344,7 +385,7 @@ class EmployeesList(Container):
         self.page.dialog = addEmployeeDialog
         addEmployeeDialog.open = True
         addEmployeeDialog.dialogEBAddEmployee.on_click = lambda _: self.addEmployee(
-            image=addEmployeeDialog.pickedEncodedImage,
+            image=addEmployeeDialog.localImagePicker.getPickedEncodedImage(),
             firstName=addEmployeeDialog.dialogTFFirstName.value,
             lastName=addEmployeeDialog.dialogTFLastName.value,
             age=addEmployeeDialog.dialogTFAge.value,
@@ -386,9 +427,6 @@ class EmployeesList(Container):
                         or emp.lastName.lower().find(value) != -1
                         or str(emp.age).find(value) != -1
                         or emp.email.lower().find(value) != -1
-                        or emp.departmentName.lower().find(value) != -1
-                        or emp.projectName.lower().find(value) != -1
-                        or emp.status.lower().find(value) != -1
                 ), getEmployees()
             )
             self.dataRows.clear()
@@ -408,20 +446,23 @@ class EmployeesList(Container):
                     ), filteredEmp
                 )
             )
+        else:
+            self.dataRows.clear()
+            self.loadData()
         self.update()
 
 
 # endregion
 
-
 # region ManagerLogin
 class ManagerLogin(Container):
-    def __init__(self, bgColor: str = None):
+    def __init__(self, bgColor: str = None, rootPage: Page = None):
         super().__init__()
         self.bgcolor = bgColor
-        self.width = 500
-        self.padding = padding.only(left=18, right=18)
+        self.padding = padding.only(left=20, right=20)
         self.border_radius = 40
+        self.opacity = 1
+        self.animate_opacity = animation.Animation(duration=2000, curve=AnimationCurve.EASE)
         self.tf_managerUsername = TextField(
             label="Username",
             color=colors.WHITE,
@@ -443,19 +484,57 @@ class ManagerLogin(Container):
             border_color=colors.WHITE,
             border_radius=20,
         )
+        self.eb_login = self.login = ElevatedButton(
+            content=Text(
+                value="LogIn",
+                font_family=str(PoppinsFont.BOLD),
+                size=20,
+                color=colors.BLACK,
+            ),
+            style=ButtonStyle(
+                shape=RoundedRectangleBorder(radius=25)
+            ),
+            elevation=10,
+            bgcolor=colors.WHITE,
+            width=200,
+            height=55,
+            on_click=self.validateLogin,
+        )
+        self.eb_register = ElevatedButton(
+            bgcolor=colors.TRANSPARENT,
+            elevation=0,
+            content=Text(
+                value="Or register",
+                font_family=str(PoppinsFont.BOLD),
+                size=15,
+                color=colors.BLUE,
+            ),
+            style=ButtonStyle(
+                shape=RoundedRectangleBorder(radius=25),
+
+            ),
+            width=200,
+            height=55,
+        )
+        self.t_managerNotExist = Text(
+            color=colors.RED,
+            font_family=str(PoppinsFont.MEDIUM_ITALIC),
+        )
+        self.rootPage = rootPage
         self.content = Column(
-            width=500,
-            height=500,
             horizontal_alignment=CrossAxisAlignment.CENTER,
             alignment=MainAxisAlignment.CENTER,
+            width=500,
+            height=500,
+            spacing=15,
             controls=[
-                Image(
-                    src=f"../assets/eye.png",
-                ),
-                Text(
-                    value="Login",
-                    text_align=TextAlign.CENTER,
-                    size=30,
+                Container(
+                    margin=margin.only(bottom=50),
+                    content=Text(
+                        value="Login",
+                        text_align=TextAlign.CENTER,
+                        size=30,
+                    ),
                 ),
                 Container(
                     margin=margin.only(bottom=15),
@@ -465,49 +544,372 @@ class ManagerLogin(Container):
                     margin=margin.only(bottom=15),
                     content=self.tf_managerPassword,
                 ),
+                Row(
+                    alignment=MainAxisAlignment.SPACE_EVENLY,
+                    controls=[
+                        self.eb_login,
+                        self.eb_register
+                    ]
+                ),
+                self.t_managerNotExist,
                 ElevatedButton(
-                    content=Text(
-                        value="LogIn",
-                        font_family=str(PoppinsFont.BOLD),
-                        size=20,
-                        color=colors.BLACK,
-                    ),
-                    style=ButtonStyle(
-                        shape=RoundedRectangleBorder(radius=25)
-                    ),
-                    elevation=10,
-                    bgcolor=colors.WHITE,
-                    width=500,
-                    height=55,
-                    on_click=self.checkIfEmptyOrBlank,
+                    text="Go to home page ->",
+                    on_click=lambda _: self.rootPage.go("/home"),
                 )
             ]
         )
 
-    def checkIfEmptyOrBlank(self, e):
+    def validateLogin(self, e):
         username = self.tf_managerUsername.value
         password = self.tf_managerPassword.value
 
-        if not (username and password):
-            if not username:
-                self.tf_managerUsername.error_text = "Missing username"
-                self.tf_managerUsername.update()
-            else:
-                self.tf_managerUsername.error_text = ""
-                self.tf_managerUsername.update()
-            if not password:
-                self.tf_managerPassword.error_text = "Missing password"
-                self.tf_managerPassword.update()
-            else:
-                self.tf_managerPassword.error_text = ""
-                self.tf_managerPassword.update()
+        if not ValidateReg.validate(username, ValidateReg.USERNAME.value[0]):
+            self.tf_managerUsername.error_text = ValidateReg.USERNAME.value[
+                1] if username else "Missing username"
+            self.tf_managerUsername.update()
+            flag = False
         else:
-            self.page.go("/home")
+            self.tf_managerUsername.error_text = ""
+            self.tf_managerUsername.update()
+            flag = True
+        if not ValidateReg.validate(password, ValidateReg.PASSWORD.value[0]):
+            self.tf_managerPassword.error_text = ValidateReg.PASSWORD.value[1] if password else "Missing password"
+            self.tf_managerPassword.update()
+            flag = False
+        else:
+            self.tf_managerPassword.error_text = ""
+            self.tf_managerPassword.update()
+            flag = True
+        if flag:
+            if getManager(username=username, password=password):
+                self.page.go("/home")
+            else:
+                self.t_managerNotExist.value = "There is no manager with the given username and password !!!"
+                self.t_managerNotExist.update()
 
 
 # endregion
 
+# region ManagerRegister
+class ManagerRegister(Container):
+    def __init__(self, rootPage: Page, bgColor: str = None):
+        super().__init__()
+        self.bgcolor = bgColor
+        self.rootPage = rootPage
+        self.padding = padding.only(left=20, right=20, top=16, bottom=16)
+        self.border_radius = 40
+        self.height = 800
+        self.animate_opacity = animation.Animation(duration=2000, curve=AnimationCurve.EASE)
+        self.pickedEncodedImage = ""
+        self.tf_managerFirstName = TextField(
+            label="First name",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            prefix_icon=icons.ACCOUNT_CIRCLE_OUTLINED,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.tf_managerLastName = TextField(
+            label="Last name",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            prefix_icon=icons.ACCOUNT_CIRCLE_OUTLINED,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.tf_managerUsername = TextField(
+            label="Username",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            prefix_icon=icons.ACCOUNT_CIRCLE_ROUNDED,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.tf_managerPassword = TextField(
+            label="Password",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            password=True,
+            prefix_icon=icons.LOCK_ROUNDED,
+            can_reveal_password=True,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.tf_managerConfirmPassword = TextField(
+            label="Confirm password",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            prefix_icon=icons.LOCK_OUTLINE_ROUNDED,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.tf_managerAge = TextField(
+            label="Age",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            prefix_icon=icons.ACCOUNT_CIRCLE_OUTLINED,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.tf_managerEmail = TextField(
+            label="Email",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            prefix_icon=icons.MAIL_ROUNDED,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.eb_register = ElevatedButton(
+            content=Text(
+                value="Register",
+                font_family=str(PoppinsFont.BOLD),
+                size=20,
+                color=colors.BLACK,
+            ),
+            style=ButtonStyle(
+                shape=RoundedRectangleBorder(radius=25)
+            ),
+            elevation=10,
+            bgcolor=colors.WHITE,
+            width=200,
+            height=55,
+        )
+        self.localImagePicker = LocalImagePicker(
+            rootPage=self.rootPage,
+            margin_=margin.only(bottom=25),
+            btnPickImage=FilledButton(
+                content=Row(
+                    controls=[
+                        Icon(
+                            name=icons.UPLOAD_FILE_ROUNDED,
+                            color=colors.WHITE
+                        ),
+                        Text(
+                            value="Click to upload image(optional)",
+                            font_family=str(PoppinsFont.BOLD),
+                            color=colors.WHITE
+                        )
+                    ]
+                ),
+                height=55,
+                style=ButtonStyle(
+                    bgcolor=colors.TRANSPARENT,
+                    shape=RoundedRectangleBorder(radius=15),
+                    side=BorderSide(width=1, color=colors.BLACK),
+                )
+            ),
+            showPickedImageName=Text(
+                font_family=str(PoppinsFont.BOLD_ITALIC),
+                size=13,
+                color=colors.BLUE,
+            ),
+        )
+        self.content = Column(
+            spacing=5,
+            horizontal_alignment=CrossAxisAlignment.CENTER,
+            scroll=ScrollMode.ALWAYS,
+            width=400,
+            alignment=MainAxisAlignment.CENTER,
+            controls=[
+                Container(
+                    margin=margin.only(bottom=50),
+                    content=Text(
+                        value="Register",
+                        text_align=TextAlign.CENTER,
+                        size=30,
+                    )
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerFirstName,
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerLastName,
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerUsername,
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerAge,
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerEmail,
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerPassword,
+                ),
+                self.localImagePicker,
+                self.eb_register
+            ]
+        )
 
+    def validateRegister(self) -> bool:
+        firstName = self.tf_managerFirstName.value
+        lastName = self.tf_managerLastName.value
+        username = self.tf_managerUsername.value
+        password = self.tf_managerPassword.value
+        age = self.tf_managerAge.value
+        email = self.tf_managerEmail.value
+        print("EImg -> ", self.pickedEncodedImage)
+        if not ValidateReg.validate(firstName, ValidateReg.FIRST_LAST_NAME.value[0]):
+            self.tf_managerFirstName.error_text = ValidateReg.FIRST_LAST_NAME.value[
+                1] if firstName else "Missing first name!!!"
+            self.tf_managerFirstName.update()
+            flag = False
+        else:
+            self.tf_managerFirstName.error_text = ""
+            self.tf_managerFirstName.update()
+            flag = True
+
+        if not ValidateReg.validate(lastName, ValidateReg.FIRST_LAST_NAME.value[0]):
+            self.tf_managerLastName.error_text = ValidateReg.FIRST_LAST_NAME.value[
+                1] if lastName else "Missing last name!!!"
+            self.tf_managerLastName.update()
+            flag = False
+        else:
+            self.tf_managerLastName.error_text = ""
+            self.tf_managerLastName.update()
+            flag = True
+
+        if not ValidateReg.validate(username, ValidateReg.USERNAME.value[0]):
+            self.tf_managerUsername.error_text = ValidateReg.USERNAME.value[
+                1] if username else "Missing username!!!"
+            self.tf_managerUsername.update()
+            flag = False
+        else:
+            self.tf_managerUsername.error_text = ""
+            self.tf_managerUsername.update()
+            flag = True
+
+        if not ValidateReg.validate(email, ValidateReg.EMAIL.value[0]):
+            self.tf_managerEmail.error_text = ValidateReg.EMAIL.value[1] if email else "Missing email!!!"
+            self.tf_managerEmail.update()
+            flag = False
+        else:
+            self.tf_managerEmail.error_text = ""
+            self.tf_managerEmail.update()
+            flag = True
+
+        if not ValidateReg.validate(age, ValidateReg.AGE.value[0]):
+            self.tf_managerAge.error_text = ValidateReg.AGE.value[1] if age else "Missing age!!!"
+            self.tf_managerAge.update()
+            flag = False
+        else:
+            self.tf_managerAge.error_text = ""
+            self.tf_managerAge.update()
+            flag = True
+
+        if not ValidateReg.validate(password, ValidateReg.PASSWORD.value[0]):
+            self.tf_managerPassword.error_text = ValidateReg.PASSWORD.value[1] if password else "Missing password!!!"
+            self.tf_managerPassword.update()
+            flag = False
+        else:
+            self.tf_managerPassword.error_text = ""
+            self.tf_managerPassword.update()
+            flag = True
+
+        if flag:
+            if createManager(
+                    Manager(
+                        firstName=firstName,
+                        lastName=lastName,
+                        age=int(age),
+                        email=email,
+                        username=username,
+                        password=password,
+                        image=self.localImagePicker.getPickedEncodedImage()
+                    )
+            ):
+                flag = True
+            else:
+                flag = False
+        return flag
+
+    # endregion
+
+
+# endregion
+
+# region ManagerTransactions
+class ManagerTransactions(Container):
+    def __init__(self, rootPage: Page):
+        super().__init__()
+        self.alignment = alignment.center
+        self.image_src = f"../assets/bgLeftNavBar.jpg"
+        self.image_fit = ImageFit.COVER
+        self.rootPage = rootPage
+        self.expand = True
+        self.managerLogin = ManagerLogin(
+            bgColor=colors.with_opacity(opacity=0.7, color=colors.BLACK),
+            rootPage=self.rootPage
+        )
+        self.managerLogin.eb_register.on_click = self.switchToRegister
+        # self.managerLogin.eb_register.on_click = lambda _: self.rootPage.go("/home")
+        self.managerRegister = ManagerRegister(
+            rootPage=self.rootPage,
+            bgColor=colors.with_opacity(opacity=0.7, color=colors.BLACK)
+        )
+        self.managerRegister.eb_register.on_click = self.switchToLogin
+        self.managerRegister.visible = False
+        self.managerRegister.opacity = 0
+        self.stack = Stack(
+            controls=[
+                self.managerRegister,
+                self.managerLogin
+            ]
+        )
+        self.content = self.stack
+
+    def switchToRegister(self, e):
+        self.managerLogin.opacity = 0
+        self.managerLogin.update()
+        sleep(0.9)
+        self.managerLogin.visible = False
+        self.managerLogin.update()
+        self.managerRegister.visible = True
+        self.managerRegister.update()
+        sleep(0.9)
+        self.managerRegister.opacity = 1
+        self.managerRegister.update()
+
+    def switchToLogin(self, e):
+        if self.managerRegister.validateRegister():
+            self.managerRegister.opacity = 0
+            self.managerRegister.update()
+            sleep(0.9)
+            self.managerRegister.visible = False
+            self.managerRegister.update()
+            self.managerLogin.visible = True
+            self.managerLogin.update()
+            sleep(0.9)
+            self.managerLogin.opacity = 1
+            self.managerLogin.update()
+
+    # endregion
+
+
+# endregion
+
+# region Camera
 class Camera(Container):
     def __init__(self):
         super().__init__()
@@ -538,5 +940,4 @@ class Camera(Container):
                 ),
             ]
         )
-
-
+# endregion

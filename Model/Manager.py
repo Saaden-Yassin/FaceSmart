@@ -95,7 +95,7 @@ class Manager(User):
                 username VARCHAR(255) NOT NULL UNIQUE,
                 age INTEGER NOT NULL,
                 email VARCHAR(255) NOT NULL UNIQUE,
-                image TEXT NOT NULL UNIQUE,
+                image TEXT UNIQUE,
                 password VARCHAR(255) NOT NULL
             )"""
         )

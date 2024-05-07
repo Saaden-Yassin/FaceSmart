@@ -2,28 +2,6 @@ from Model.Project import *
 from datetime import datetime
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def listToString(listIds):
     str1 = ","
     return str1.join(map(str, listIds))
@@ -169,5 +147,22 @@ def getTimeLeftForDeadline(project: Project) -> int | None:
         return daysLeft
     except Exception as e:
         print(f"An error occurred while calculating time left for deadline: {e}")
+        return None
+
+
+# endregion
+
+# region getProjectNameByID
+def getProjectNameByID(ID: int) -> str | None:
+    try:
+        cursor.execute("""SELECT name FROM PROJECTS WHERE ID = ?""", (ID,))
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            print("Project with given ID not found")
+            return None
+    except sqlite3.Error as e:
+        print("Error fetching project name by ID:", e)
         return None
 # endregion

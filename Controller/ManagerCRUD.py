@@ -1,23 +1,6 @@
 from Model.Manager import *
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # region Create_Managers!!!
 def createManager(manager: Manager):
     if cursor.execute(
@@ -104,7 +87,7 @@ def getManager(username: str = None, password: str = None, image: str = None):
             print("logged successfully")
         else:
             print("Manager not found !!!")
-    elif username is not None and password is not None:
+    elif (username and password) is not None:
         hash_password = str(hash(password))
         cursor.execute("SELECT username, password FROM MANAGERS WHERE username = ? AND password = ?",
                        (username, hash_password))

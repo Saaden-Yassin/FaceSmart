@@ -19,8 +19,8 @@ class Schedule:
         return self.__ID
 
     @property
-    def employeeID(self):
-        return self.__employeeID
+    def employeeImage(self):
+        return getEmployeeImageByID(self.__employeeID)
 
     @property
     def checkDay(self):
@@ -38,9 +38,9 @@ class Schedule:
 
     # region setters!!!
 
-    @employeeID.setter
-    def employeeID(self, employeeID: int):
-        self.__employeeID = employeeID
+    @employeeImage.setter
+    def employeeImage(self, employeeImage: str):
+        self.__employeeID = getEmployeeIDByImage(employeeImage)
 
     @checkDay.setter
     def checkDay(self, checkDay: str):
@@ -57,7 +57,7 @@ class Schedule:
     # endregion
 
     def __str__(self):
-        return f"{self.ID} | {self.employeeID} | {self.checkDay} | {self.beginningTime} | {self.endingTime}"
+        return f"{self.ID} | {getEmployeeIDByImage(self.employeeImage)} | {self.checkDay} | {self.beginningTime} | {self.endingTime}"
 
     # region Methods_To_Manipulate_Schedule
 

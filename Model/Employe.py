@@ -4,17 +4,6 @@ from Controller.DepartmentCRUD import *
 from Model.ConnectionToDB import *
 
 
-
-
-
-
-
-
-
-
-
-
-
 class Employee(User):
     def __init__(self, ID: int = 0,
                  firstName: str = "",

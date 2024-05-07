@@ -1,25 +1,6 @@
 from Model.Department import *
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def listToString(listIds):
     str1 = ","
     return str1.join(map(str, listIds))

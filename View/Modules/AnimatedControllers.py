@@ -90,7 +90,10 @@ class AnimatedProgressBar(Column):
         return self.__totalEmployees
 
     def percentageProgressValue(self) -> int:
-        return round((self.nbrEmployees / self.totalEmployees) * 100)
+        if self.totalEmployees != 0:
+            return round((self.nbrEmployees / self.totalEmployees) * 100)
+        else:
+            return 0
 
     def did_mount(self):
         Thread(target=self.animateProgress, daemon=True).start()
@@ -196,3 +199,4 @@ class AnimatedSearchBar(Container):
         self.update()
 
 # endregion
+
