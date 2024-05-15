@@ -51,7 +51,7 @@ def getEmployees() -> list | None:
     if employees:
         for emp in employees:
             employee = Employee(ID=emp[0], firstName=emp[1], lastName=emp[2], age=emp[3], email=emp[4],
-                                image=emp[5], departmentName=emp[6], projectName=emp[7], status=emp[9])
+                                image=emp[5], departmentName=emp[6], projectName=getProjectIDByName(emp[7]), status=emp[9])
             employeesList.append(employee)
         return employeesList
     else:
@@ -85,8 +85,8 @@ def updateEmployee(ID: int, firstName: str = None, lastName: str = None, age: in
         sql += "departmentName = ?, "
         parameters.append(departmentName)
     if projectName:
-        sql += "projectName = ?, "
-        parameters.append(projectName)
+        sql += "projectID = ?, "
+        parameters.append(getProjectIDByName(projectName))
     sql = sql[:-2]
     sql += " WHERE ID = ?"
     parameters.append(ID)
@@ -200,17 +200,17 @@ def getEmployeeNameByID(ID: int) -> str | None:
 # endregion
 
 # region verifyEmployeeExistenceByImage
-def verifyEmployeeExistenceByImage(image: str) -> bool:
-    try:
-        cursor.execute("""SELECT COUNT(*) FROM EMPLOYEES WHERE image = ?""", (image,))
-        result = cursor.fetchone()
-        if result and result[0] > 0:
-            return True
-        else:
-            return False
-    except sqlite3.Error as e:
-        print("Error verifying employee existence by image:", e)
-        return False
+# def verifyEmployeeExistenceByImage(image: str) -> bool:
+#     try:
+#         cursor.execute("""SELECT COUNT(*) FROM EMPLOYEES WHERE image = ?""", (image,))
+#         result = cursor.fetchone()
+#         if result and result[0] > 0:
+#             return True
+#         else:
+#             return False
+#     except sqlite3.Error as e:
+#         print("Error verifying employee existence by image:", e)
+#         return False
 
 
 # endregion
@@ -288,4 +288,20 @@ def getEmployeeImageByID(ID: int) -> str | None:
     except sqlite3.Error as e:
         print("Error fetching employee image by ID:", e)
         return None
+
+
+# endregion
+
+# region getEmployeesImages
+def getEmployeesImages() -> list[dict]:
+    try:
+        cursor.execute("""SELECT ID, image FROM EMPLOYEES""")
+        employeesImagesAndIDs = []
+        rows = cursor.fetchall()
+        for row in rows:
+            employeesImagesAndIDs.append({"id": row[0], "image": row[1]})
+        return employeesImagesAndIDs
+    except sqlite3.Error as e:
+        print("Error retrieving employees' images:", e)
+        return [{}]
 # endregion

@@ -130,8 +130,8 @@ class Project:
                     ID INTEGER PRIMARY KEY AUTOINCREMENT,
                     name VARCHAR(255) NOT NULL,
                     startDate VARCHAR(255) NOT NULL,
-                    endDate VARCHAR(255) NOT NULL UNIQUE,
-                    status VARCHAR(255) NOT NULL UNIQUE,
+                    endDate VARCHAR(255) NOT NULL,
+                    status VARCHAR(255) NOT NULL,
                     employeesIDsList TEXT
                )""")
         except sqlite3.Error as e:

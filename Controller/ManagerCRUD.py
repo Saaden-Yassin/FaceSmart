@@ -1,18 +1,18 @@
 from Model.Manager import *
 
-
 # region Create_Managers!!!
 def createManager(manager: Manager):
-    if cursor.execute(
+    try:
+        cursor.execute(
             """
-        INSERT INTO Managers(firstName, lastName, username, age, email, image, password) VALUES (?,?,?,?,?,?,?)
-        """,
+            INSERT INTO Managers(firstName, lastName, username, age, email, image, password) VALUES (?,?,?,?,?,?,?)
+            """,
             (manager.firstName, manager.lastName, manager.username, manager.age, manager.email, manager.image,
              manager.password)
-    ):
+        )
         conn.commit()
         return True
-    else:
+    except sqlite3.IntegrityError:
         return False
 
 
@@ -38,7 +38,7 @@ def getAllManagers() -> list | None:
 def updateManager(ID: int, firstName: str = None, lastName: str = None, username: str = None, age: int = None,
                   email: str = None, image: str = None,
                   password: str = None):
-    sql: str = "UPDATE EMPLOYEES SET "
+    sql = "UPDATE MANAGERS SET "
     parameters = []
     if firstName:
         sql += "firstName = ?, "
@@ -80,22 +80,33 @@ def deleteManager(ID: int):
 
 # region signin!!!
 def getManager(username: str = None, password: str = None, image: str = None):
-    if image is not None:
-        cursor.execute("SELECT image FROM MANAGERS WHERE image = ?", (image,))
+    if not (username and password) and not image:
+        print("Invalid parameters provided.")
+        return False
+
+    if image:
+        cursor.execute("SELECT image FROM managers WHERE image = ?", (image,))
         result = cursor.fetchone()
         if result:
-            print("logged successfully")
+            print("Manager found by image.")
+            return True
         else:
-            print("Manager not found !!!")
-    elif (username and password) is not None:
-        hash_password = str(hash(password))
-        cursor.execute("SELECT username, password FROM MANAGERS WHERE username = ? AND password = ?",
-                       (username, hash_password))
+            print("Manager not found by image.")
+            return False
+
+    if username and password:
+        cursor.execute("SELECT username, password FROM managers WHERE username = ?", (username,))
         result = cursor.fetchone()
         if result:
-            print("logged successfully")
+            if result[1] == password:
+                print("Manager logged in successfully.")
+                return True
+            else:
+                print("Invalid password.")
+                return False
         else:
-            print("invalid user name or password")
-    else:
-        print("try again !!!")
+            print("Invalid username.")
+            return False
+
+
 # endregion

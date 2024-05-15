@@ -187,7 +187,6 @@ class AnimatedSearchBar(Container):
             self.__searchIcon.bgcolor = colors.TRANSPARENT
             self.flag = False
         else:
-            # self.loadDataFunc()
             self.__searchEntry.value = ""
             self.__searchEntry.width = 0
             self.__searchIcon.icon = icons.SEARCH_ROUNDED

@@ -15,6 +15,9 @@ def navigate(e):
         case 1:
             mainContentContainer.content = EmployeesList()
             mainContentContainer.update()
+        case 2:
+            mainContentContainer.content = ProjectList()
+            mainContentContainer.update()
         case 5:
             mainContentContainer.content = Camera()
             mainContentContainer.update()

@@ -10,6 +10,7 @@ def listToString(listIds):
 # region Create_Project!!!
 def createProject(project: Project):
     try:
+        Project()
         cursor.execute(
             """INSERT INTO PROJECTS (name, startDate, endDate, status, employeesIdsList)
                VALUES (?, ?, ?, ?, ?)""",
@@ -25,14 +26,13 @@ def createProject(project: Project):
 # endregion
 
 # region Retrieve_Projects!!!
-def getProjects() -> list | None:
+def getProjects() -> list[Project] | None:
     cursor.execute("""SELECT * FROM PROJECTS""")
     projectsList = []
     projects = cursor.fetchall()
     if projects:
-        for prjt in projects:
-            project = Project(prjt[0], prjt[1], prjt[2], prjt[3], prjt[4], prjt[5])
-            projectsList.append(project)
+        for prjct in projects:
+            projectsList.append(Project(prjct[0], prjct[1], prjct[2], prjct[3], prjct[4], prjct[5]))
         return projectsList
     else:
         return None
@@ -165,4 +165,24 @@ def getProjectNameByID(ID: int) -> str | None:
     except sqlite3.Error as e:
         print("Error fetching project name by ID:", e)
         return None
+
+
+# endregion
+
+# region getProjectsTableSorted
+def getProjectsTableSorted(criteria: str = "ID", sortMode: str = "ASC") -> list[Project] | None:
+    try:
+        cursor.execute(f"SELECT * FROM PROJECTS ORDER BY {criteria} {sortMode}")
+        projectsList = []
+        projects = cursor.fetchall()
+        if projects:
+            for prjct in projects:
+                projectsList.append(Project(prjct[0], prjct[1], prjct[2], prjct[3], prjct[4], prjct[5]))
+            return projectsList
+        else:
+            return None
+    except sqlite3.Error as e:
+        print("Error retrieving sorted projects:", e)
+        return None
+
 # endregion

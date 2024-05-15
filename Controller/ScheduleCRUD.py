@@ -1,7 +1,12 @@
-from typing import Optional, Tuple
+import base64
+from threading import Thread
 
-from Model.Schedule import *
+import cv2
+import face_recognition
+import numpy as np
+
 from Controller.EmployeCRUD import *
+from Model.Schedule import *
 
 
 # region Create_Schedule!!!
@@ -45,7 +50,8 @@ def getSchedules() -> list | None:
         schedules = cursor.fetchall()
         if schedules:
             for scdl in schedules:
-                schedule = Schedule(ID=scdl[0], employeeImage=getEmployeeImageByID(scdl[1]), beginningTime=scdl[2], endingTime=scdl[3],
+                schedule = Schedule(ID=scdl[0], employeeID=getEmployeeImageByID(scdl[1]), beginningTime=scdl[2],
+                                    endingTime=scdl[3],
                                     checkDay=scdl[4])
                 schedulesList.append(schedule)
             return schedulesList
@@ -95,57 +101,13 @@ def deleteSchedule(ID: int):
 
 # endregion
 
-# region checkIn
-def checkIn(image: str) -> bool:
-    try:
-        if verifyEmployeeExistenceByImage(image):
-            if createSchedule(Schedule(employeeImage=image, checkDay=datetime.now().strftime("%Y-%m-%d"))):
-                cursor.execute("""UPDATE EMPLOYEES SET status = 'Active' WHERE ID = ?""",
-                               (getEmployeeIDByImage(image),))
-                print("Checking success!")
-                conn.commit()
-                return True
-            else:
-                print("Checking failure")
-                return False
-        else:
-            print("Unknown person!")
-            return False
-    except Exception as e:
-        print(f"An error occurred while checking in: {e}")
-        return False
-
-
-# endregion
-
-# region checkOut
-def checkOut(image: str) -> bool:
-    try:
-        if verifyEmployeeExistenceByImage(image):
-            employeeID = getEmployeeIDByImage(image)
-            if updateSchedule(employeeID=employeeID):
-                print("Check out success!")
-                return True
-            else:
-                print("Check out failure")
-                return False
-        else:
-            print("Unknown person!")
-            return False
-    except Exception as e:
-        print(f"An error occurred while checking out: {e}")
-        return False
-
-
-# endregion
-
 # region getLastCheckinOrLastCheckout
 def getLastCheckinOrLastCheckout() -> list[str]:
     schedules = getSchedules()
     if schedules:
         lastSchedule: Schedule = schedules[-1]
-        empID = getEmployeeIDByImage(lastSchedule.employeeImage)
-        empImage = lastSchedule.employeeImage
+        empID = lastSchedule.employeeID
+        empImage = getEmployeeImageByID(empID)
         empName = getEmployeeNameByID(empID)
         endingTime = lastSchedule.endingTime
         beginningTime = lastSchedule.beginningTime
@@ -164,4 +126,52 @@ def getLastCheckinOrLastCheckout() -> list[str]:
                 return lastCheck
     return ["", "", "", "", ""]
 
+
 # endregion
+
+
+def loadEmployeesFaceEncodings():
+    employeeImages = getEmployeesImages()
+    employeesFaceEncodings = []
+    employeeIds = []
+    for data in employeeImages:
+        # Decode the base64 encoded image
+        imageData = base64.b64decode(data["image"])
+        # Convert bytes to numpy array
+        npArray = np.frombuffer(imageData, np.uint8)
+        # Decode numpy array to image
+        employeeImage = cv2.imdecode(npArray, cv2.IMREAD_COLOR)
+        # Get face encodings if a face is detected
+        face_encodings = face_recognition.face_encodings(employeeImage)
+        if face_encodings:
+            faceEncoding = face_encodings[0]  # Take the first detected face
+            employeesFaceEncodings.append(faceEncoding)
+            employeeIds.append(data["id"])
+        else:
+            print("No face detected for employee with ID:", data["id"])
+    return employeesFaceEncodings, employeeIds
+
+
+# Function to recognize faces and return existence status, employee ID, and date
+def recognize_faces(rgb_image, image, known_face_encodings, employee_ids):
+    face_locations = face_recognition.face_locations(rgb_image)
+    face_encodings = face_recognition.face_encodings(rgb_image, face_locations)
+
+    for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+        # Compare face encoding with the known face encodings
+        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+
+        # If there is a match
+        if True in matches:
+            # Find the index of the matched face
+            match_index = matches.index(True)
+            cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
+            # Get employee ID and current date
+            employee_id = employee_ids[match_index]
+            current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            return True, employee_id, current_date
+        else:
+            cv2.rectangle(image, (left, top), (right, bottom), (0, 0, 255), 2)
+    # If no match found
+    return False, None, None
+

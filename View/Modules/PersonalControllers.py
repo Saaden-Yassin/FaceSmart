@@ -7,7 +7,7 @@ import requests
 from AnimatedControllers import *
 from Controller.EmployeCRUD import *
 from PersonalEnums import *
-from View.Modules.Containers import EmployeesList
+from View.Modules.Containers import EmployeesList, ProjectList
 
 
 # region ProjectInfoContainer
@@ -61,6 +61,8 @@ class ProjectInfoContainer(Container):
 
 # region EmployeesCard
 class EmployeesCard(Container):
+    totalEmployees = 0
+
     def __init__(self, col: dict[str, int | float] | int | float = None, title: str = "Card title",
                  titleColor: str = None, iconName: str = icons.PEOPLE_ALT,
                  iconColor: str = None, shadowColor: str = None,
@@ -119,7 +121,7 @@ class EmployeesCard(Container):
                             color=progressBarColor,
                             bgColor=progressBarBgColor,
                             nbrEmployees=nbrEmployees,
-                            totalEmployees=totalEmployees
+                            totalEmployees=EmployeesCard.totalEmployees
                         )
                     ]
                 )
@@ -853,14 +855,6 @@ class EmployeeDataRow(DataRow):
             width=250,
             text_align=TextAlign.CENTER,
         )
-        # self.image = Image(
-        #     filter_quality=FilterQuality.HIGH,
-        #     fit=ImageFit.COVER,
-        #     src_base64=imageSrcBase64,
-        #     width=45,
-        #     height=45,
-        #     repeat=ImageRepeat.NO_REPEAT
-        # )
         self.tf_firstName = TextField(
             value=firstName,
             width=250,
@@ -997,11 +991,11 @@ class EmployeeDataRow(DataRow):
         self.tf_firstName.value = ""
         self.tf_firstName.hint_text = "Enter new first name..."
         self.tf_firstName.border_width = 1
-        self.tf_firstName.on_submit = lambda _: self.updateEffectFirstName(firstName=self.tf_firstName.value)
+        self.tf_firstName.on_submit = self.updateEffectFirstName
         self.tf_firstName.update()
 
-    def updateEffectFirstName(self, firstName: str):
-        updateEmployee(ID=int(self.t_id.value), firstName=firstName)
+    def updateEffectFirstName(self, e):
+        updateEmployee(ID=int(self.t_id.value), firstName=self.tf_firstName.value)
         self.tf_firstName.border_width = 0
         self.tf_firstName.update()
 
@@ -1013,11 +1007,11 @@ class EmployeeDataRow(DataRow):
         self.tf_lastName.value = ""
         self.tf_lastName.hint_text = "Enter new last name..."
         self.tf_lastName.border_width = 1
-        self.tf_lastName.on_submit = lambda _: self.updateEffectLastName(lastName=self.tf_lastName.value)
+        self.tf_lastName.on_submit = self.updateEffectLastName
         self.tf_lastName.update()
 
-    def updateEffectLastName(self, lastName: str):
-        updateEmployee(ID=int(self.t_id.value), lastName=lastName)
+    def updateEffectLastName(self, e):
+        updateEmployee(ID=int(self.t_id.value), lastName=self.tf_lastName.value)
         self.tf_lastName.border_width = 0
         self.tf_lastName.update()
 
@@ -1029,11 +1023,11 @@ class EmployeeDataRow(DataRow):
         self.tf_age.value = ""
         self.tf_age.hint_text = "Enter new age..."
         self.tf_age.border_width = 1
-        self.tf_age.on_submit = lambda _: self.updateEffectAge(age=self.tf_age.value)
+        self.tf_age.on_submit = self.updateEffectAge
         self.tf_age.update()
 
-    def updateEffectAge(self, age: str):
-        updateEmployee(ID=int(self.t_id.value), age=int(age))
+    def updateEffectAge(self, e):
+        updateEmployee(ID=int(self.t_id.value), age=int(self.tf_age.value))
         self.tf_age.border_width = 0
         self.tf_age.update()
 
@@ -1045,11 +1039,11 @@ class EmployeeDataRow(DataRow):
         self.tf_email.value = ""
         self.tf_email.hint_text = "Enter new email..."
         self.tf_email.border_width = 1
-        self.tf_email.on_submit = lambda _: self.updateEffectEmail(email=self.tf_email.value)
+        self.tf_email.on_submit = self.updateEffectEmail
         self.tf_email.update()
 
-    def updateEffectEmail(self, email: str):
-        updateEmployee(ID=int(self.t_id.value), email=email)
+    def updateEffectEmail(self, e):
+        updateEmployee(ID=int(self.t_id.value), email=self.tf_email.value)
         self.tf_email.border_width = 0
         self.tf_email.update()
 
@@ -1061,11 +1055,11 @@ class EmployeeDataRow(DataRow):
         self.tf_department.value = ""
         self.tf_department.hint_text = "Enter new department..."
         self.tf_department.border_width = 1
-        self.tf_department.on_submit = lambda _: self.updateEffectDepartment(departmentName=self.tf_department.value)
+        self.tf_department.on_submit = self.updateEffectDepartment
         self.tf_department.update()
 
-    def updateEffectDepartment(self, departmentName: str):
-        updateEmployee(ID=int(self.t_id.value), departmentName=departmentName)
+    def updateEffectDepartment(self, e):
+        updateEmployee(ID=int(self.t_id.value), departmentName=self.tf_department.value)
         self.tf_department.border_width = 0
         self.tf_department.update()
 
@@ -1077,12 +1071,11 @@ class EmployeeDataRow(DataRow):
         self.tf_currentProject.value = ""
         self.tf_currentProject.hint_text = "Enter new current project..."
         self.tf_currentProject.border_width = 1
-        self.tf_currentProject.on_submit = lambda _: self.updateEffectProjectName(
-            projectName=self.tf_currentProject.value)
+        self.tf_currentProject.on_submit = self.updateEffectProjectName
         self.tf_currentProject.update()
 
-    def updateEffectProjectName(self, projectName: str):
-        updateEmployee(ID=int(self.t_id.value), projectName=projectName)
+    def updateEffectProjectName(self, e):
+        updateEmployee(ID=int(self.t_id.value), projectName=self.tf_currentProject.value)
         self.tf_currentProject.border_width = 0
         self.tf_currentProject.update()
 
@@ -1137,4 +1130,330 @@ class LocalImagePicker(Container):
         if self.pickedEncodedImage:
             return self.pickedEncodedImage
         return ""
+
+
+# endregion
+
+# region AddProjectDialog
+class AddProjectDialog(AlertDialog):
+    def __init__(self, projectList: ProjectList):
+        super().__init__()
+        self.modal = True
+        self.shadow_color = colors.BLACK
+        self.content_padding = 0
+        self.actions_padding = 0
+        self.projectList = projectList
+        self.selectedStatus: str = ""
+        self.selectedStartDate: str = ""
+        self.selectedEndDate: str = ""
+        self.dialogImage = Image(
+            src=f"../assets/eye.png",
+            width=120,
+            height=120,
+        )
+        self.dialogTFProjectName = TextField(
+            label="Project name",
+            border_radius=15,
+            text_style=TextStyle(font_family=str(PoppinsFont.MEDIUM))
+        )
+        self.dialogDPStartDate = DatePicker(
+            on_change=self.onChangeStartDate,
+            current_date=datetime.now(),
+        )
+        self.projectList.page.overlay.append(self.dialogDPStartDate)
+
+        self.dialogDPEndDate = DatePicker(
+            on_change=self.onChangeEndDate,
+            current_date=datetime.now(),
+        )
+        self.projectList.page.overlay.append(self.dialogDPEndDate)
+
+        self.stateOptions = []
+        for state in ProjectState:
+            self.stateOptions.append(dropdown.Option(key=state.name))
+
+        self.dialogDDStatus = Dropdown(
+            alignment=alignment.top_right,
+            label="Status",
+            border_radius=15,
+            bgcolor="#173839",
+            options=self.stateOptions,
+            on_change=self.selectDepartment
+        )
+        self.dialogEBAddProject = ElevatedButton(
+            content=Text(
+                value="Add",
+                size=16.1,
+                font_family=str(PoppinsFont.BOLD)
+            ),
+            bgcolor="#173839",
+            color=colors.WHITE,
+            width=100,
+            height=50,
+            style=ButtonStyle(
+                shape=RoundedRectangleBorder(radius=10)
+            ),
+        )
+        self.content = Column(
+            scroll=ScrollMode.ALWAYS,
+            controls=[
+                Container(
+                    padding=padding.all(16),
+                    border_radius=30,
+                    gradient=AppColors.BLACK_GREEN_LINEAR_GRADIAN.value,
+                    content=Column(
+                        horizontal_alignment=CrossAxisAlignment.CENTER,
+                        spacing=15,
+                        controls=[
+                            self.dialogImage,
+                            self.dialogTFProjectName,
+                            FilledButton(
+                                content=Row(
+                                    controls=[
+                                        Icon(
+                                            name=icons.CALENDAR_MONTH,
+                                            color=colors.WHITE
+                                        ),
+                                        Text(
+                                            value="Pick start date",
+                                            font_family=str(PoppinsFont.BOLD),
+                                            color=colors.WHITE
+                                        )
+                                    ]
+                                ),
+                                on_click=lambda _: self.dialogDPStartDate.pick_date(),
+                                height=55,
+                                style=ButtonStyle(
+                                    bgcolor=colors.TRANSPARENT,
+                                    shape=RoundedRectangleBorder(radius=15),
+                                    side=BorderSide(width=1, color=colors.BLACK),
+                                )
+                            ),
+                            FilledButton(
+                                content=Row(
+                                    controls=[
+                                        Icon(
+                                            name=icons.CALENDAR_MONTH,
+                                            color=colors.WHITE
+                                        ),
+                                        Text(
+                                            value="Pick end date",
+                                            font_family=str(PoppinsFont.BOLD),
+                                            color=colors.WHITE
+                                        )
+                                    ]
+                                ),
+                                on_click=lambda _: self.dialogDPEndDate.pick_date(),
+                                height=55,
+                                style=ButtonStyle(
+                                    bgcolor=colors.TRANSPARENT,
+                                    shape=RoundedRectangleBorder(radius=15),
+                                    side=BorderSide(width=1, color=colors.BLACK),
+                                )
+                            ),
+                            self.dialogDDStatus,
+                            Row(
+                                alignment=MainAxisAlignment.CENTER,
+                                controls=[
+                                    self.dialogEBAddProject,
+                                    ElevatedButton(
+                                        content=Text(
+                                            value="Close",
+                                            size=16.1,
+                                            font_family=str(PoppinsFont.BOLD)
+                                        ),
+                                        bgcolor=colors.TRANSPARENT,
+                                        color=colors.GREY,
+                                        height=50,
+                                        style=ButtonStyle(
+                                            shape=RoundedRectangleBorder(radius=10)
+                                        ),
+                                        on_click=self.closeDialog
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                )
+            ]
+        )
+
+    def selectDepartment(self, e):
+        self.selectedStatus = self.dialogDDStatus.value
+        print(self.selectedStatus)
+
+    def onChangeStartDate(self, e):
+        self.selectedStartDate = self.dialogDPStartDate.value.strftime("%Y-%m-%d")
+        print(self.selectedStartDate)
+
+    def onChangeEndDate(self, e):
+        self.selectedEndDate = self.dialogDPEndDate.value.strftime("%Y-%m-%d")
+        print(self.selectedEndDate)
+
+    def closeDialog(self, e):
+        self.open = False
+        self.projectList.page.update()
+
+
+# endregion
+
+# region ProjectDataRow
+class ProjectDataRow(DataRow):
+    def __init__(self, id: int, projectName: str, startDate: str,
+                 endDate: str, status: str, dataTable: DataTable = None):
+        super().__init__()
+        self.dataTable = dataTable
+        self.t_id = Text(
+            value=str(id),
+            font_family=str(PoppinsFont.MEDIUM),
+            width=250,
+            text_align=TextAlign.CENTER,
+        )
+        self.tf_projectName = TextField(
+            value=projectName,
+            width=250,
+            text_align=TextAlign.CENTER,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM)
+            ),
+            color=colors.WHITE,
+            border_width=0,
+            disabled=True
+        )
+        self.tf_startDate = TextField(
+            value=startDate,
+            width=250,
+            text_align=TextAlign.CENTER,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM)
+            ),
+            color=colors.WHITE,
+            border_width=0,
+            disabled=True
+        )
+        self.tf_endDate = TextField(
+            value=endDate,
+            width=250,
+            text_align=TextAlign.CENTER,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM)
+            ),
+            color=colors.WHITE,
+            border_width=0,
+            disabled=True
+        )
+        self.tf_status = TextField(
+            value=status,
+            width=250,
+            text_align=TextAlign.CENTER,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM)
+            ),
+            color=colors.WHITE,
+            border_width=0,
+            disabled=True
+        )
+        self.cells = [
+            DataCell(
+                content=self.t_id,
+            ),
+            DataCell(
+                content=self.tf_projectName,
+                on_tap=self.updateProjectName,
+            ),
+            DataCell(
+                content=self.tf_startDate,
+                on_tap=self.updateStartDate,
+            ),
+            DataCell(
+                content=self.tf_endDate,
+                on_tap=self.updateEndDate,
+            ),
+            DataCell(
+                content=self.tf_status,
+                on_tap=self.updateStatus,
+            ),
+            DataCell(
+                content=Row(
+                    alignment=MainAxisAlignment.CENTER,
+                    controls=[
+                        IconButton(
+                            icon=icons.DELETE_ROUNDED,
+                            icon_color=colors.RED,
+                            on_click=self.deleteProject
+                        )
+                    ]
+                )
+            )
+        ]
+
+    # region Project
+    def updateProjectName(self, e):
+        self.tf_projectName.disabled = False
+        self.tf_projectName.value = ""
+        self.tf_projectName.hint_text = "Enter new project name..."
+        self.tf_projectName.border_width = 1
+        self.tf_projectName.on_submit = self.updateEffectProjectName
+        self.tf_projectName.update()
+
+    def updateEffectProjectName(self, e):
+        updateProject(ID=int(self.t_id.value), name=self.tf_projectName.value)
+        self.tf_projectName.border_width = 0
+        self.tf_projectName.update()
+
+    # endregion
+
+    # region Start date
+    def updateStartDate(self, e):
+        self.tf_startDate.disabled = False
+        self.tf_startDate.value = ""
+        self.tf_startDate.hint_text = "Enter new start date..."
+        self.tf_startDate.border_width = 1
+        self.tf_startDate.on_submit = self.updateEffectStartDate
+        self.tf_startDate.update()
+
+    def updateEffectStartDate(self, e):
+        updateProject(ID=int(self.t_id.value), startDate=self.tf_startDate.value)
+        self.tf_startDate.border_width = 0
+        self.tf_startDate.update()
+
+    # endregion
+
+    # region End date
+    def updateEndDate(self, e):
+        self.tf_endDate.disabled = False
+        self.tf_endDate.value = ""
+        self.tf_endDate.hint_text = "Enter new end date..."
+        self.tf_endDate.border_width = 1
+        self.tf_endDate.on_submit = self.updateEffectEndDate
+        self.tf_endDate.update()
+
+    def updateEffectEndDate(self, e):
+        updateProject(ID=int(self.t_id.value), endDate=self.tf_endDate.value)
+        self.tf_endDate.border_width = 0
+        self.tf_endDate.update()
+
+    # endregion
+
+    # region Status
+    def updateStatus(self, e):
+        self.tf_status.disabled = False
+        self.tf_status.value = ""
+        self.tf_status.hint_text = "Enter new status..."
+        self.tf_status.border_width = 1
+        self.tf_status.on_submit = self.updateEffectStatus
+        self.tf_status.update()
+
+    def updateEffectStatus(self, e):
+        updateProject(ID=int(self.t_id.value), status=self.tf_status.value)
+        self.tf_status.border_width = 0
+        self.tf_status.update()
+
+    # endregion
+
+    def deleteProject(self, e):
+        deleteProject(ID=int(self.t_id.value))
+        self.dataTable.rows.remove(self)
+        self.dataTable.update()
+
 # endregion

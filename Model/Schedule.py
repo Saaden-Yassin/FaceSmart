@@ -3,12 +3,12 @@ from Controller.EmployeCRUD import *
 
 class Schedule:
     def __init__(self, ID: int = 0,
-                 employeeImage: str = "",
+                 employeeID: int = 0,
                  checkDay: str = datetime.now().strftime("%Y-%m-%d"),
                  beginningTime: str = datetime.now().strftime("%H:%M:%S"),
                  endingTime: str = None):
         self.__ID: int = ID
-        self.__employeeID: int = getEmployeeIDByImage(employeeImage)
+        self.__employeeID: int = employeeID
         self.__checkDay: str = checkDay
         self.__beginningTime: str = beginningTime
         self.__endingTime: str = endingTime
@@ -19,8 +19,8 @@ class Schedule:
         return self.__ID
 
     @property
-    def employeeImage(self):
-        return getEmployeeImageByID(self.__employeeID)
+    def employeeID(self):
+        return self.employeeID
 
     @property
     def checkDay(self):
@@ -38,9 +38,9 @@ class Schedule:
 
     # region setters!!!
 
-    @employeeImage.setter
-    def employeeImage(self, employeeImage: str):
-        self.__employeeID = getEmployeeIDByImage(employeeImage)
+    @employeeID.setter
+    def employeeID(self, employeeID: str):
+        self.__employeeID = employeeID
 
     @checkDay.setter
     def checkDay(self, checkDay: str):
@@ -57,7 +57,9 @@ class Schedule:
     # endregion
 
     def __str__(self):
-        return f"{self.ID} | {getEmployeeIDByImage(self.employeeImage)} | {self.checkDay} | {self.beginningTime} | {self.endingTime}"
+        return (f"{self.ID} | {getEmployeeIDByImage(self.employeeID)} | {self.checkDay} "
+                f"| {self.beginningTime} "
+                f"| {self.endingTime}")
 
     # region Methods_To_Manipulate_Schedule
 

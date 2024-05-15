@@ -4,6 +4,7 @@ from enum import Enum
 from flet import *
 
 
+# region AppColors
 class AppColors(Enum):
     BLACK_GREEN_LINEAR_GRADIAN = LinearGradient(
         begin=alignment.top_right,
@@ -19,6 +20,9 @@ class AppColors(Enum):
     )
 
 
+# endregion
+
+# region ProjectState
 class ProjectState(Enum):
     TO_DO = 0
     START = 25
@@ -27,6 +31,9 @@ class ProjectState(Enum):
     COMPLETED = 100
 
 
+# endregion
+
+# region PoppinsFont
 class PoppinsFont(Enum):
     BLACK = "../assets/fonts/Poppins/Poppins-Black.ttf"
     BLACK_ITALIC = "../assets/fonts/Poppins/Poppins-BlackItalic.ttf"
@@ -47,6 +54,9 @@ class PoppinsFont(Enum):
     THIN_ITALIC = "../assets/fonts/Poppins/Poppins-ThinItalic.ttf"
 
 
+# endregion
+
+# region ValidateReg
 class ValidateReg(Enum):
     USERNAME = (r"^\w+$", "Invalid username")
     EMAIL = (r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', "Email format must be xxxxx@exemple.xxx")
@@ -57,3 +67,4 @@ class ValidateReg(Enum):
     @classmethod
     def validate(cls, value, pattern):
         return re.match(pattern, value) is not None
+# endregion

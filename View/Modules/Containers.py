@@ -9,6 +9,7 @@ class DashBoardContent(Column):
     def __init__(self, col: int | float = None, username: str = "John Doe"):
         super().__init__()
         self.expand = True
+        EmployeesCard.totalEmployees = getTotalNumberOfEmployees()
         self.scroll = ScrollMode.ALWAYS
         self.col = col,
         self.spacing = 0
@@ -158,14 +159,14 @@ class DashBoardContent(Column):
                                                 )
                                             ]
                                         ),
-                                        EmployeesInOutContainer(
-                                            col=3,
-                                            employeeID=getLastCheckinOrLastCheckout()[0],
-                                            circleImageBase64Src=getLastCheckinOrLastCheckout()[1],
-                                            employeeName=getLastCheckinOrLastCheckout()[2],
-                                            hour=getLastCheckinOrLastCheckout()[3],
-                                            check=getLastCheckinOrLastCheckout()[4]
-                                        )
+                                        # EmployeesInOutContainer(
+                                        #     col=3,
+                                        #     employeeID=getLastCheckinOrLastCheckout()[0],
+                                        #     circleImageBase64Src=getLastCheckinOrLastCheckout()[1],
+                                        #     employeeName=getLastCheckinOrLastCheckout()[2],
+                                        #     hour=getLastCheckinOrLastCheckout()[3],
+                                        #     check=getLastCheckinOrLastCheckout()[4]
+                                        # )
                                     ]
                                 )
                             ]
@@ -184,7 +185,6 @@ class EmployeesList(Container):
         super().__init__()
         self.padding = 16
         self.dataRows = []
-        self.bgcolor = colors.TRANSPARENT
         self.isAscendant: bool = False
         self.animatedSearchBar = AnimatedSearchBar()
         self.animatedSearchBar.onChange(self.searchEmployee)
@@ -305,7 +305,7 @@ class EmployeesList(Container):
                                     bgcolor="#1D7D81",
                                     overlay_color="#9cbab7"
                                 ),
-                                on_click=self.showDialog
+                                on_click=self.showEmployeeDialog
                             )
                         ]
                     )
@@ -380,7 +380,7 @@ class EmployeesList(Container):
             )
         self.update()
 
-    def showDialog(self, e):
+    def showEmployeeDialog(self, e):
         addEmployeeDialog = AddEmployeeDialog(self)
         self.page.dialog = addEmployeeDialog
         addEmployeeDialog.open = True
@@ -909,14 +909,224 @@ class ManagerTransactions(Container):
 
 # endregion
 
+# region ProjectList
+class ProjectList(Container):
+    def __init__(self):
+        super().__init__()
+        self.padding = padding.only(top=70, left=16, right=16)
+        self.animatedSearchBar = AnimatedSearchBar()
+        self.animatedSearchBar.onChange(self.searchProject)
+        self.dataRows = []
+        self.isAscendant: bool = False
+        self.dataTable = DataTable(
+            columns=[
+                DataColumn(
+                    TableHeadingContainer(
+                        textValue="ID",
+                        enableSort=True,
+                        onSortClick=lambda _: self.sortProjectsList(sortCriteria="ID"),
+                    )
+                ),
+                DataColumn(
+                    TableHeadingContainer(
+                        textValue="Project name",
+                        enableSort=True,
+                        onSortClick=lambda _: self.sortProjectsList(sortCriteria="name"),
+                    )
+                ),
+                DataColumn(
+                    TableHeadingContainer(
+                        textValue="Start date",
+                        enableSort=True,
+                        onSortClick=lambda _: self.sortProjectsList(sortCriteria="startDate"),
+                    )
+                ),
+                DataColumn(
+                    TableHeadingContainer(
+                        textValue="End date",
+                        enableSort=True,
+                        onSortClick=lambda _: self.sortProjectsList(sortCriteria="endDate"),
+                    )
+                ),
+                DataColumn(
+                    TableHeadingContainer(
+                        textValue="Status",
+                        enableFilter=True,
+                    )
+                ),
+                DataColumn(
+                    TableHeadingContainer(
+                        textValue="Delete",
+                    )
+                )
+            ],
+            rows=self.dataRows
+        )
+        self.content = Column(
+            controls=[
+                Container(
+                    margin=margin.only(bottom=50),
+                    content=Row(
+                        alignment=MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            self.animatedSearchBar,
+                            ElevatedButton(
+                                content=Text(
+                                    value="Add Project",
+                                    size=16.1,
+                                    color=colors.WHITE
+                                ),
+                                height=50,
+                                style=ButtonStyle(
+                                    shape=RoundedRectangleBorder(
+                                        radius=5
+                                    ),
+                                    bgcolor="#1D7D81",
+                                    overlay_color="#9cbab7"
+                                ),
+                                on_click=self.showProjectDialog
+                            )
+                        ]
+                    )
+                ),
+                Container(
+                    gradient=AppColors.BLACK_GREEN_LINEAR_GRADIAN.value,
+                    content=Column(
+                        scroll=ScrollMode.ALWAYS,
+                        expand=True,
+                        controls=[
+                            Row(
+                                scroll=ScrollMode.ADAPTIVE,
+                                controls=[
+                                    self.dataTable
+                                ]
+                            )
+                        ]
+                    )
+                )
+            ]
+        )
+
+    def did_mount(self):
+        Thread(target=self.loadData, daemon=True).start()
+
+    def loadData(self):
+        if getEmployees():
+            self.dataRows.extend(
+                map(
+                    lambda project: (
+                        ProjectDataRow(
+                            id=project.ID,
+                            projectName=project.name,
+                            startDate=project.startDate,
+                            endDate=project.endDate,
+                            status=project.status,
+                            dataTable=self.dataTable
+                        )
+                    ),
+                    getProjects()
+                )
+            )
+        self.update()
+
+    def sortProjectsList(self, sortCriteria: str = id):
+        self.isAscendant = not self.isAscendant
+        flag = self.isAscendant
+        sortedProjects = getProjectsTableSorted(
+            criteria=sortCriteria,
+            sortMode="ASC" if flag else "DESC"
+        )
+        self.dataRows.clear()
+        self.dataRows.extend(
+            map(
+                lambda project: (
+                    ProjectDataRow(
+                        id=project.ID,
+                        projectName=project.name,
+                        startDate=project.startDate,
+                        endDate=project.endDate,
+                        status=project.status,
+                        dataTable=self.dataTable
+                    )
+                ),
+                sortedProjects
+            )
+        )
+        self.update()
+
+    def showProjectDialog(self, e):
+        addProjectDialog = AddProjectDialog(self)
+        self.page.dialog = addProjectDialog
+        addProjectDialog.open = True
+        addProjectDialog.dialogEBAddProject.on_click = lambda _: self.addProject(
+            projectName=addProjectDialog.dialogTFProjectName.value,
+            startDate=addProjectDialog.selectedStartDate,
+            endDate=addProjectDialog.selectedEndDate,
+            status=addProjectDialog.selectedStatus
+        )
+        self.page.update()
+
+    def addProject(self, projectName: str, startDate: str, endDate: str, status: str, ):
+        if projectName and startDate and endDate and status:
+            if createProject(Project(name=projectName, startDate=startDate, endDate=endDate, status=status)):
+                self.dataRows.append(
+                    ProjectDataRow(
+                        id=getProjects()[-1].ID,
+                        projectName=getProjects()[-1].name,
+                        startDate=getProjects()[-1].startDate,
+                        endDate=getProjects()[-1].endDate,
+                        status=getProjects()[-1].status,
+                        dataTable=self.dataTable
+                    )
+                )
+            self.update()
+
+    def searchProject(self, e):
+        value = self.animatedSearchBar.getSearchEntry().lower()
+        if value != "":
+            filteredProject = filter(
+                lambda project: (
+                        str(project.ID).find(value) != -1
+                        or project.name.lower().find(value) != -1
+                        or project.startDate.lower().find(value) != -1
+                        or project.endDate.lower().find(value) != -1
+                        or project.status.lower().find(value) != -1
+                ), getProjects()
+            )
+            self.dataRows.clear()
+            self.dataRows.extend(
+                map(
+                    lambda project: ProjectDataRow(
+                        id=project.ID,
+                        projectName=project.name,
+                        startDate=project.startDate,
+                        endDate=project.endDate,
+                        status=project.status,
+                        dataTable=self.dataTable
+                    ), filteredProject
+                )
+            )
+        else:
+            self.dataRows.clear()
+            self.loadData()
+        self.update()
+
+
+# endregion
+
 # region Camera
 class Camera(Container):
     def __init__(self):
         super().__init__()
         self.expand = True
-        # self.alignment = alignment.center
+        self.showCheckMessage = Text(
+            color=colors.WHITE,
+            font_family=str(PoppinsFont.MEDIUM),
+        )
         self.content = Column(
             horizontal_alignment=CrossAxisAlignment.CENTER,
+            alignment=MainAxisAlignment.CENTER,
+            spacing=15,
             controls=[
                 ElevatedButton(
                     content=Text(
@@ -925,8 +1135,16 @@ class Camera(Container):
                         style=TextStyle(
                             font_family=str(PoppinsFont.MEDIUM)
                         ),
+                    ), style=ButtonStyle(
+                        shape=RoundedRectangleBorder(
+                            radius=5
+                        ),
+                        bgcolor="#1D7D81",
+                        overlay_color="#9cbab7"
                     ),
-                    bgcolor="#1D7D81"
+                    height=70,
+                    width=150,
+                    on_click=lambda _: Thread(target=self.checkIn).start()
                 ),
                 ElevatedButton(
                     content=Text(
@@ -936,8 +1154,92 @@ class Camera(Container):
                             font_family=str(PoppinsFont.MEDIUM)
                         ),
                     ),
-                    bgcolor="#1D7D81"
+                    style=ButtonStyle(
+                        shape=RoundedRectangleBorder(
+                            radius=5
+                        ),
+                        bgcolor="#1D7D81",
+                        overlay_color="#9cbab7"
+                    ),
+                    height=70,
+                    width=150,
+                    on_click=lambda _: Thread(target=self.checkOut).start()
                 ),
+                self.showCheckMessage
             ]
         )
+
+    # region Check In
+    def checkIn(self):
+        known_face_encodings, employee_ids = loadEmployeesFaceEncodings()
+        # Initialize the camera
+        cam = cv2.VideoCapture(0)
+        # Set webcam resolution
+        cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+        while True:
+            # Read the input using the camera
+            result, image = cam.read()
+
+            # If image is detected without any error, proceed with face detection
+            if result:
+                # Convert the image to RGB format (required by face_recognition library)
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+                # Detect faces and recognize
+                exists, employee_id, current_date = recognize_faces(rgb_image, image, known_face_encodings,
+                                                                    employee_ids)
+
+                if exists:
+                    print(f"CheckIn -> Employee ID : {employee_id} | Check date: {current_date}")
+                    # self.showCheckMessage.value = f"CheckIn -> Employee ID : {employee_id} | Check date: {current_date}"
+                    # self.showCheckMessage.update()
+                # Show the image
+                cv2.imshow("Face Recognition", image)
+
+            # Break the loop if 'q' is pressed
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                # Close OpenCV windows
+                cv2.destroyAllWindows()
+                exit()
+    # endregion
+
+    # region check Out
+    def checkOut(self):
+
+        known_face_encodings, employee_ids = loadEmployeesFaceEncodings()
+        # Initialize the camera
+        cam = cv2.VideoCapture(0)
+        # Set webcam resolution
+        cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+        while True:
+            # Read the input using the camera
+            result, image = cam.read()
+
+            # If image is detected without any error, proceed with face detection
+            if result:
+                # Convert the image to RGB format (required by face_recognition library)
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+                # Detect faces and recognize
+                exists, employee_id, current_date = recognize_faces(rgb_image, image, known_face_encodings,
+                                                                    employee_ids)
+
+                if exists:
+                    print(f"CheckOut -> Employee ID : {employee_id} | Check date: {current_date}")
+                    # self.showCheckMessage.value = f"CheckOut -> Employee ID : {employee_id} | Check date: {current_date}"
+                    # self.showCheckMessage.update()
+                # Show the image
+                cv2.imshow("Face Recognition", image)
+
+            # Break the loop if 'q' is pressed
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                # Close OpenCV windows
+                cv2.destroyAllWindows()
+                exit()
+    # endregion
+
 # endregion

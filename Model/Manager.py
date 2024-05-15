@@ -1,5 +1,4 @@
 from Model.User import User
-
 from Model.ConnectionToDB import *
 
 
@@ -8,13 +7,13 @@ class Manager(User):
                  firstName: str = "",
                  lastName: str = "",
                  username: str = "",
-                 age: int = "",
+                 age: int = 0,
                  email: str = "",
                  image: str = "",
                  password: str = ""):
         super().__init__(ID, firstName, lastName, age, email, image)
-        self.__userName: str = username
-        self.__password: str = str(hash(password))
+        self.__userName = username
+        self.__password = password
 
     # region getters!!!
     @property
@@ -78,9 +77,10 @@ class Manager(User):
 
     @password.setter
     def password(self, password: str):
-        self.__password = str(hash(password))
+        self.__password = password
 
     # endregion
+
     def __str__(self):
         return f"{self.ID} | {self.firstName} - {self.lastName} | {self.username} | {self.age} | {self.email} | {self.image} | {self.password}"
 
@@ -88,14 +88,14 @@ class Manager(User):
     @staticmethod
     def createManagersTable():
         cursor.execute(
-            """CREATE TABLE IF NOT EXISTS MANAGERS (
+            """CREATE TABLE IF NOT EXISTS managers (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 firstName VARCHAR(255) NOT NULL,
-                lastName VARCHAR(255)NOT NULL UNIQUE,
+                lastName VARCHAR(255) NOT NULL,
                 username VARCHAR(255) NOT NULL UNIQUE,
                 age INTEGER NOT NULL,
                 email VARCHAR(255) NOT NULL UNIQUE,
-                image TEXT UNIQUE,
+                image TEXT,
                 password VARCHAR(255) NOT NULL
             )"""
         )
