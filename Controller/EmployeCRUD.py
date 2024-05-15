@@ -8,7 +8,7 @@ def listToString(listIds):
 
 
 # region Create_Employees!!!
-def createEmployee(employee: Employee):
+def createEmployee(employee: Employee) -> bool:
     departmentID = None
     projectID = None
 

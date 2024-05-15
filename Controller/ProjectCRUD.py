@@ -8,7 +8,7 @@ def listToString(listIds):
 
 
 # region Create_Project!!!
-def createProject(project: Project):
+def createProject(project: Project) -> bool:
     try:
         Project()
         cursor.execute(
@@ -19,8 +19,10 @@ def createProject(project: Project):
         )
         conn.commit()
         print("Project inserted successfully.")
+        return True
     except sqlite3.Error as sqlerror:
         print("Error inserting project:", sqlerror)
+        return False
 
 
 # endregion

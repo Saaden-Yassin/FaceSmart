@@ -6,6 +6,7 @@ from Controller.ScheduleCRUD import *
 
 # region DashBoardContent
 class DashBoardContent(Column):
+
     def __init__(self, col: int | float = None, username: str = "John Doe"):
         super().__init__()
         self.expand = True
@@ -582,7 +583,10 @@ class ManagerLogin(Container):
             flag = True
         if flag:
             if getManager(username=username, password=password):
+                self.page.session.set(key="username", value=username)
+                DashBoardContent.username = username
                 self.page.go("/home")
+                self.page.update()
             else:
                 self.t_managerNotExist.value = "There is no manager with the given username and password !!!"
                 self.t_managerNotExist.update()
@@ -1203,6 +1207,7 @@ class Camera(Container):
                 # Close OpenCV windows
                 cv2.destroyAllWindows()
                 exit()
+
     # endregion
 
     # region check Out

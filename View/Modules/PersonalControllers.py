@@ -484,9 +484,14 @@ class DashBoardImage(Container):
             spacing=0,
         )
         self.content = Stack(
+            expand=True,
             controls=[
-                Image(
-                    src=f"../assets/HomeImage.png",
+                ResponsiveRow(
+                    controls=[
+                        Image(
+                            src=f"../assets/HomeImage.png",
+                        )
+                    ]
                 ),
                 self.textColumn
             ]
@@ -1280,15 +1285,12 @@ class AddProjectDialog(AlertDialog):
 
     def selectDepartment(self, e):
         self.selectedStatus = self.dialogDDStatus.value
-        print(self.selectedStatus)
 
     def onChangeStartDate(self, e):
         self.selectedStartDate = self.dialogDPStartDate.value.strftime("%Y-%m-%d")
-        print(self.selectedStartDate)
 
     def onChangeEndDate(self, e):
         self.selectedEndDate = self.dialogDPEndDate.value.strftime("%Y-%m-%d")
-        print(self.selectedEndDate)
 
     def closeDialog(self, e):
         self.open = False
