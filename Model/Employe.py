@@ -1,7 +1,7 @@
 from Model.User import User
 from Controller.ProjectCRUD import *
 from Controller.DepartmentCRUD import *
-from Model.ConnectionToDB import *
+from Database.ConnectionToDB import *
 
 
 class Employee(User):
@@ -16,10 +16,10 @@ class Employee(User):
                  schedulesIDsList: list[int] = None,
                  status: str = "Inactive"):
         super().__init__(ID, firstName, lastName, age, email, image)
-        self.__departmentID: int = getDepartmentIDByName(departmentName) if departmentName else None
-        self.__projectID: int = getProjectIDByName(projectName) if projectName else None
-        self.__schedulesIDsList: list[int] = schedulesIDsList if schedulesIDsList else []
-        self.__status: str = status
+        self.__departmentID: int | None = getDepartmentIDByName(departmentName)
+        self.__projectID: int | None = getProjectIDByName(projectName)
+        self.__schedulesIDsList: list[int] | None = schedulesIDsList
+        self.__status: str | None = status
 
     # region getters!!!
     @property
@@ -52,7 +52,7 @@ class Employee(User):
 
     @property
     def projectName(self):
-        return self.__projectID
+        return getProjectNameByID(self.__projectID)
 
     @property
     def schedulesIDsList(self):

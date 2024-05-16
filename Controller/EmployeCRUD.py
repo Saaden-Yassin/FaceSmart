@@ -44,14 +44,15 @@ def createEmployee(employee: Employee) -> bool:
 # endregion
 
 # region Retrieve_Employees!!!
-def getEmployees() -> list | None:
+def getEmployees() -> list[Employee] | None:
     cursor.execute("""SELECT * FROM EMPLOYEES""")
     employeesList = []
     employees = cursor.fetchall()
     if employees:
         for emp in employees:
             employee = Employee(ID=emp[0], firstName=emp[1], lastName=emp[2], age=emp[3], email=emp[4],
-                                image=emp[5], departmentName=emp[6], projectName=getProjectIDByName(emp[7]), status=emp[9])
+                                image=emp[5], departmentName=emp[6], projectName=getProjectNameByID(emp[7]),
+                                status=emp[9])
             employeesList.append(employee)
         return employeesList
     else:
@@ -197,25 +198,6 @@ def getEmployeeNameByID(ID: int) -> str | None:
         return None
 
 
-# endregion
-
-# region verifyEmployeeExistenceByImage
-# def verifyEmployeeExistenceByImage(image: str) -> bool:
-#     try:
-#         cursor.execute("""SELECT COUNT(*) FROM EMPLOYEES WHERE image = ?""", (image,))
-#         result = cursor.fetchone()
-#         if result and result[0] > 0:
-#             return True
-#         else:
-#             return False
-#     except sqlite3.Error as e:
-#         print("Error verifying employee existence by image:", e)
-#         return False
-
-
-# endregion
-
-# region getTotalNumberOfEmployees
 def getTotalNumberOfEmployees() -> int:
     try:
         cursor.execute("SELECT COUNT(*) FROM EMPLOYEES")
@@ -263,7 +245,7 @@ def getEmployeesTableSorted(criteria: str = "ID", sortMode: str = "ASC"):
         if employees:
             for emp in employees:
                 employee = Employee(ID=emp[0], firstName=emp[1], lastName=emp[2], age=emp[3], email=emp[4],
-                                    image=emp[5], departmentName=emp[6], projectName=emp[7], status=emp[8])
+                                    image=emp[5], departmentName=emp[6], projectName=getProjectNameByID(emp[7]), status=emp[8])
                 employeesList.append(employee)
             return employeesList
         else:

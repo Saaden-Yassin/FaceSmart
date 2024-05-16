@@ -490,6 +490,8 @@ class DashBoardImage(Container):
                     controls=[
                         Image(
                             src=f"../assets/HomeImage.png",
+                            filter_quality=FilterQuality.HIGH,
+                            fit=ImageFit.COVER,
                         )
                     ]
                 ),
@@ -1149,8 +1151,16 @@ class AddProjectDialog(AlertDialog):
         self.actions_padding = 0
         self.projectList = projectList
         self.selectedStatus: str = ""
-        self.selectedStartDate: str = ""
-        self.selectedEndDate: str = ""
+        self.selectedStartDate: Text = Text(
+            value="Pick start date",
+            font_family=str(PoppinsFont.MEDIUM),
+            color=colors.WHITE
+        )
+        self.selectedEndDate: Text = Text(
+            value="Pick end date",
+            font_family=str(PoppinsFont.MEDIUM),
+            color = colors.WHITE
+        )
         self.dialogImage = Image(
             src=f"../assets/eye.png",
             width=120,
@@ -1219,11 +1229,7 @@ class AddProjectDialog(AlertDialog):
                                             name=icons.CALENDAR_MONTH,
                                             color=colors.WHITE
                                         ),
-                                        Text(
-                                            value="Pick start date",
-                                            font_family=str(PoppinsFont.BOLD),
-                                            color=colors.WHITE
-                                        )
+                                        self.selectedStartDate
                                     ]
                                 ),
                                 on_click=lambda _: self.dialogDPStartDate.pick_date(),
@@ -1241,11 +1247,7 @@ class AddProjectDialog(AlertDialog):
                                             name=icons.CALENDAR_MONTH,
                                             color=colors.WHITE
                                         ),
-                                        Text(
-                                            value="Pick end date",
-                                            font_family=str(PoppinsFont.BOLD),
-                                            color=colors.WHITE
-                                        )
+                                        self.selectedEndDate
                                     ]
                                 ),
                                 on_click=lambda _: self.dialogDPEndDate.pick_date(),
@@ -1287,10 +1289,12 @@ class AddProjectDialog(AlertDialog):
         self.selectedStatus = self.dialogDDStatus.value
 
     def onChangeStartDate(self, e):
-        self.selectedStartDate = self.dialogDPStartDate.value.strftime("%Y-%m-%d")
+        self.selectedStartDate.value = self.dialogDPStartDate.value.strftime("%Y-%m-%d")
+        self.selectedStartDate.update()
 
     def onChangeEndDate(self, e):
-        self.selectedEndDate = self.dialogDPEndDate.value.strftime("%Y-%m-%d")
+        self.selectedEndDate.value = self.dialogDPEndDate.value.strftime("%Y-%m-%d")
+        self.selectedEndDate.update()
 
     def closeDialog(self, e):
         self.open = False
@@ -1409,7 +1413,7 @@ class ProjectDataRow(DataRow):
     def updateStartDate(self, e):
         self.tf_startDate.disabled = False
         self.tf_startDate.value = ""
-        self.tf_startDate.hint_text = "Enter new start date..."
+        self.tf_startDate.hint_text = "Enter new start date (yyyy-mm-dd)..."
         self.tf_startDate.border_width = 1
         self.tf_startDate.on_submit = self.updateEffectStartDate
         self.tf_startDate.update()
@@ -1425,7 +1429,7 @@ class ProjectDataRow(DataRow):
     def updateEndDate(self, e):
         self.tf_endDate.disabled = False
         self.tf_endDate.value = ""
-        self.tf_endDate.hint_text = "Enter new end date..."
+        self.tf_endDate.hint_text = "Enter new end date (yyyy-mm-dd)..."
         self.tf_endDate.border_width = 1
         self.tf_endDate.on_submit = self.updateEffectEndDate
         self.tf_endDate.update()

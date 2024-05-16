@@ -1,4 +1,4 @@
-from Model.ConnectionToDB import *
+from Database.ConnectionToDB import *
 
 
 class Project:

@@ -27,7 +27,7 @@ class AnimatedProgressRing(Stack):
             Text(
                 top=17,
                 left=14,
-                value=f"{str(progressValue)}%",
+                value=f"{str(self.progressValue) if self.progressValue != 0 else str(0.0)}%",
                 size=16,
                 weight=FontWeight.W_500
             )
@@ -37,10 +37,15 @@ class AnimatedProgressRing(Stack):
         Thread(target=self.animateProgress, daemon=True).start()
 
     def animateProgress(self):
-        for i in range(0, self.progressValue):
-            self.progressRing.value = i * 0.01
-            sleep(0.030)
+        if self.progressValue != 0:
+            for i in range(0, self.progressValue + 1):
+                self.progressRing.value = i * 0.01
+                sleep(0.030)
+                self.progressRing.update()
+        else:
+            self.progressRing.value = 0
             self.progressRing.update()
+
 
 
 # endregion

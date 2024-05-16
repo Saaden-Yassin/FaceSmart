@@ -20,7 +20,7 @@ class Schedule:
 
     @property
     def employeeID(self):
-        return self.employeeID
+        return self.__employeeID
 
     @property
     def checkDay(self):
@@ -56,10 +56,10 @@ class Schedule:
 
     # endregion
 
-    def __str__(self):
-        return (f"{self.ID} | {getEmployeeIDByImage(self.employeeID)} | {self.checkDay} "
-                f"| {self.beginningTime} "
-                f"| {self.endingTime}")
+    # def __str__(self):
+    #     return (f"{self.ID} | {getEmployeeIDByImage(self.employeeID)} | {self.checkDay} "
+    #             f"| {self.beginningTime} "
+    #             f"| {self.endingTime}")
 
     # region Methods_To_Manipulate_Schedule
 

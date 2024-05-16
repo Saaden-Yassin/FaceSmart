@@ -1,5 +1,5 @@
 from Model.User import User
-from Model.ConnectionToDB import *
+from Database.ConnectionToDB import *
 
 
 class Manager(User):

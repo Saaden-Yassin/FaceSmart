@@ -57,7 +57,8 @@ class DashBoardContent(Column):
                                                                         value="View All",
                                                                         size=16.1,
                                                                         weight=FontWeight.BOLD
-                                                                    )
+                                                                    ),
+                                                                    on_click=self.viewProjects
                                                                 )
                                                             ]
                                                         ), Container(
@@ -65,25 +66,34 @@ class DashBoardContent(Column):
                                                             content=Column(
                                                                 controls=[
                                                                     ProjectInfoContainer(
-                                                                        progressValue=ProjectState.TESTING.value,
+                                                                        progressValue=ProjectState[
+                                                                            getSortedProjectByDayLeft()[
+                                                                                0].status].value,
                                                                         progressBgColor="#172336",
                                                                         progressColor="#465F85",
-                                                                        projectName="My Project FaceSmart",
-                                                                        projectDaysLeft=7
+                                                                        projectName=getSortedProjectByDayLeft()[0].name,
+                                                                        projectDaysLeft=getTimeLeftForDeadline(
+                                                                            getSortedProjectByDayLeft()[0])
                                                                     ),
                                                                     ProjectInfoContainer(
-                                                                        progressValue=ProjectState.IN_PROGRESS.value,
+                                                                        progressValue=ProjectState[
+                                                                            getSortedProjectByDayLeft()[
+                                                                                1].status].value,
                                                                         progressBgColor="#2B1D2C",
                                                                         progressColor="#844685",
-                                                                        projectName="My Project FaceSmart",
-                                                                        projectDaysLeft=7
+                                                                        projectName=getSortedProjectByDayLeft()[1].name,
+                                                                        projectDaysLeft=getTimeLeftForDeadline(
+                                                                            getSortedProjectByDayLeft()[1])
                                                                     ),
                                                                     ProjectInfoContainer(
-                                                                        progressValue=ProjectState.START.value,
+                                                                        progressValue=ProjectState[
+                                                                            getSortedProjectByDayLeft()[
+                                                                                2].status].value,
                                                                         progressBgColor="#3F3023",
                                                                         progressColor="#C55D42",
-                                                                        projectName="My Project FaceSmart",
-                                                                        projectDaysLeft=7
+                                                                        projectName=getSortedProjectByDayLeft()[2].name,
+                                                                        projectDaysLeft=getTimeLeftForDeadline(
+                                                                            getSortedProjectByDayLeft()[2])
                                                                     )
                                                                 ]
                                                             )
@@ -176,6 +186,9 @@ class DashBoardContent(Column):
                 )
             ),
         ]
+
+    def viewProjects(self, e):
+        pass
 
 
 # endregion
@@ -423,11 +436,12 @@ class EmployeesList(Container):
         if value != "":
             filteredEmp = filter(
                 lambda emp: (
-                        str(emp.ID).find(value) != -1
-                        or emp.firstName.lower().find(value) != -1
-                        or emp.lastName.lower().find(value) != -1
-                        or str(emp.age).find(value) != -1
-                        or emp.email.lower().find(value) != -1
+                    str(emp.ID).find(value) != -1
+                    or emp.firstName.lower().find(value) != -1
+                    or emp.lastName.lower().find(value) != -1
+                    or str(emp.age).find(value) != -1
+                    or emp.email.lower().find(value) != -1
+                    or emp.projectName.lower().find(value) != -1 if emp.projectName else None
                 ), getEmployees()
             )
             self.dataRows.clear()
@@ -1064,8 +1078,8 @@ class ProjectList(Container):
         addProjectDialog.open = True
         addProjectDialog.dialogEBAddProject.on_click = lambda _: self.addProject(
             projectName=addProjectDialog.dialogTFProjectName.value,
-            startDate=addProjectDialog.selectedStartDate,
-            endDate=addProjectDialog.selectedEndDate,
+            startDate=addProjectDialog.selectedStartDate.value,
+            endDate=addProjectDialog.selectedEndDate.value,
             status=addProjectDialog.selectedStatus
         )
         self.page.update()
@@ -1192,12 +1206,13 @@ class Camera(Container):
                 rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
                 # Detect faces and recognize
-                exists, employee_id, current_date = recognize_faces(rgb_image, image, known_face_encodings,
-                                                                    employee_ids)
+                exists, employee_id = recognize_faces(rgb_image, image, known_face_encodings,
+                                                      employee_ids)
 
                 if exists:
-                    print(f"CheckIn -> Employee ID : {employee_id} | Check date: {current_date}")
-                    # self.showCheckMessage.value = f"CheckIn -> Employee ID : {employee_id} | Check date: {current_date}"
+                    Thread(target=scheduleCheckIn, args=[employee_id], daemon=True).start()
+                    # print(f"CheckIn -> Employee ID : {employee_id} ")
+                    # self.showCheckMessage.value = f"CheckIn -> Employee ID : {employee_id}"
                     # self.showCheckMessage.update()
                 # Show the image
                 cv2.imshow("Face Recognition", image)
@@ -1230,11 +1245,13 @@ class Camera(Container):
                 rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
                 # Detect faces and recognize
-                exists, employee_id, current_date = recognize_faces(rgb_image, image, known_face_encodings,
-                                                                    employee_ids)
+                exists, employee_id = recognize_faces(rgb_image, image, known_face_encodings,
+                                                      employee_ids)
 
                 if exists:
-                    print(f"CheckOut -> Employee ID : {employee_id} | Check date: {current_date}")
+                    # print(f"CheckOut -> Employee ID : {employee_id}")
+
+                    Thread(target=scheduleCheckOut, args=[employee_id], daemon=True).start()
                     # self.showCheckMessage.value = f"CheckOut -> Employee ID : {employee_id} | Check date: {current_date}"
                     # self.showCheckMessage.update()
                 # Show the image

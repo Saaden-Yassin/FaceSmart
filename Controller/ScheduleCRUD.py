@@ -16,7 +16,7 @@ def createSchedule(schedule: Schedule) -> bool:
     try:
         cursor.execute("""SELECT COUNT(*) FROM SCHEDULES 
                               WHERE employeeID = ? AND checkDay = ? AND beginningTime IS NOT NULL""",
-                       (schedule.employeeImage, schedule.checkDay))
+                       (schedule.employeeID, schedule.checkDay))
         countCheckin = cursor.fetchone()[0]
         if countCheckin >= maxCheckinPerDay:
             print("You've reached the maximum number of check-ins for today.")
@@ -24,42 +24,20 @@ def createSchedule(schedule: Schedule) -> bool:
 
         cursor.execute("""SELECT COUNT(*) FROM SCHEDULES 
                               WHERE employeeID = ? AND checkDay = ? AND endingTime IS NOT NULL""",
-                       (schedule.employeeImage, schedule.checkDay))
+                       (schedule.employeeID, schedule.checkDay))
         countCheckOut = cursor.fetchone()[0]
         if countCheckOut >= maxCheckOutPerDay:
             print("You've reached the maximum number of check-outs for today.")
             return False
 
         cursor.execute("""INSERT INTO SCHEDULES(employeeID, checkDay, beginningTime) VALUES (?,?,?)""",
-                       (getEmployeeIDByImage(schedule.employeeImage), schedule.checkDay, schedule.beginningTime))
+                       (schedule.employeeID, schedule.checkDay, schedule.beginningTime))
         conn.commit()
-        print(f"Welcome {getEmployeeNameByID(schedule.employeeImage)}!\nIt's a new day, meaning new challenges!")
+        print(f"Welcome {getEmployeeNameByID(schedule.employeeID)}!\nIt's a new day, meaning new challenges!")
         return True
     except Exception as e:
         print(f"An error occurred while creating schedule: {e}")
         return False
-
-
-# endregion
-
-# region Retrieve_Schedules!!!
-def getSchedules() -> list | None:
-    try:
-        cursor.execute("""SELECT * FROM SCHEDULES""")
-        schedulesList = []
-        schedules = cursor.fetchall()
-        if schedules:
-            for scdl in schedules:
-                schedule = Schedule(ID=scdl[0], employeeID=getEmployeeImageByID(scdl[1]), beginningTime=scdl[2],
-                                    endingTime=scdl[3],
-                                    checkDay=scdl[4])
-                schedulesList.append(schedule)
-            return schedulesList
-        else:
-            return None
-    except Exception as e:
-        print(f"An error occurred while retrieving schedules: {e}")
-        return None
 
 
 # endregion
@@ -90,6 +68,28 @@ def updateSchedule(employeeID: int):
 
 # endregion
 
+# region Retrieve_Schedules!!!
+def getSchedules() -> list | None:
+    try:
+        cursor.execute("""SELECT * FROM SCHEDULES""")
+        schedulesList = []
+        schedules = cursor.fetchall()
+        if schedules:
+            for scdl in schedules:
+                schedule = Schedule(ID=scdl[0], employeeID=scdl[1], beginningTime=scdl[2],
+                                    endingTime=scdl[3],
+                                    checkDay=scdl[4])
+                schedulesList.append(schedule)
+            return schedulesList
+        else:
+            return None
+    except Exception as e:
+        print(f"An error occurred while retrieving schedules: {e}")
+        return None
+
+
+# endregion
+
 # region Delete_Schedule!!!
 def deleteSchedule(ID: int):
     try:
@@ -97,6 +97,43 @@ def deleteSchedule(ID: int):
         conn.commit()
     except Exception as e:
         print(f"An error occurred while deleting schedule: {e}")
+
+
+# endregion
+
+# region checkIn
+def scheduleCheckIn(ID) -> bool:
+    try:
+        if createSchedule(Schedule(employeeID=ID, beginningTime=datetime.now().strftime("%H:%M:%S"),
+                                   checkDay=datetime.now().strftime("%Y-%m-%d"))):
+            cursor.execute("""UPDATE EMPLOYEES SET status = 'Active' WHERE ID = ?""",
+                           (id,))
+            print("Checking success!")
+            conn.commit()
+            return True
+        else:
+            print("Checking failure")
+            return False
+    except Exception as e:
+        print(f"An error occurred while checking in: {e}")
+        return False
+
+
+# endregion
+
+# region checkOut
+def scheduleCheckOut(ID) -> bool:
+    try:
+
+        if updateSchedule(employeeID=ID):
+            print("Check out success!")
+            return True
+        else:
+            print("Check out failure")
+            return False
+    except Exception as e:
+        print(f"An error occurred while checking out: {e}")
+        return False
 
 
 # endregion
@@ -168,10 +205,8 @@ def recognize_faces(rgb_image, image, known_face_encodings, employee_ids):
             cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
             # Get employee ID and current date
             employee_id = employee_ids[match_index]
-            current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            return True, employee_id, current_date
+            return True, employee_id
         else:
             cv2.rectangle(image, (left, top), (right, bottom), (0, 0, 255), 2)
     # If no match found
-    return False, None, None
-
+    return False, None

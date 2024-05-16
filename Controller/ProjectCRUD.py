@@ -187,4 +187,30 @@ def getProjectsTableSorted(criteria: str = "ID", sortMode: str = "ASC") -> list[
         print("Error retrieving sorted projects:", e)
         return None
 
+
 # endregion
+
+def getProjectById(projectID: int) -> Project | None:
+    cursor.execute("""SELECT * FROM PROJECTS WHERE ID = ? """, (projectID,))
+    project = cursor.fetchone()
+    if project:
+        return Project(project[0], project[1], project[2], project[3], project[4], project[5])
+    else:
+        return None
+
+
+def getSortedProjectByDayLeft() -> list[Project] | None:
+    if getProjects():
+        projectsDict = {}
+        projectsList = []
+        for project in getProjects():
+            projectsDict[project.ID] = getTimeLeftForDeadline(project)
+
+        sortedProjectDict = dict(sorted(projectsDict.items(), key=lambda item: item[1]))
+
+        for id in sortedProjectDict.keys():
+            projectsList.append(getProjectById(id))
+
+        return projectsList
+    else:
+        return None
