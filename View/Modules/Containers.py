@@ -664,8 +664,13 @@ class ManagerRegister(Container):
                     content=self.tf_managerPassword,
                 ),
                 self.localImagePicker,
-                self.eb_register,
-                self.eb_login
+                Row(
+                    controls=[
+                        self.eb_register,
+                        self.eb_login
+                    ]
+                )
+
             ]
         )
 
