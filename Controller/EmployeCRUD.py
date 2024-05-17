@@ -275,7 +275,7 @@ def getEmployeeImageByID(ID: int) -> str | None:
 # endregion
 
 # region getEmployeesImages
-def getEmployeesImages() -> list[dict]:
+def getEmployeesImages() -> list[dict] | None:
     try:
         cursor.execute("""SELECT ID, image FROM EMPLOYEES""")
         employeesImagesAndIDs = []
@@ -285,5 +285,5 @@ def getEmployeesImages() -> list[dict]:
         return employeesImagesAndIDs
     except sqlite3.Error as e:
         print("Error retrieving employees' images:", e)
-        return [{}]
+        return None
 # endregion

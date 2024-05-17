@@ -349,6 +349,17 @@ class EmployeesInOutContainer(Container):
         self.employeeName = employeeName
         self.employeeID = employeeID
         self.circleImageBase64Src = circleImageBase64Src
+        self.checkContainer: Container = Container(
+            padding=padding.all(5),
+            bgcolor=colors.GREY,
+            border_radius=10,
+            content=Text(
+                value=self.check,
+                color=colors.BLACK,
+                font_family=str(PoppinsFont.BOLD),
+                size=16.01,
+            )
+        )
         self.content = Column(
             spacing=15,
             controls=[
@@ -432,21 +443,15 @@ class EmployeesInOutContainer(Container):
                             font_family=str(PoppinsFont.MEDIUM),
                             size=16.01,
                         ),
-                        Container(
-                            padding=padding.all(5),
-                            bgcolor="#B5FF57" if self.check == "checkIn" else colors.RED,
-                            border_radius=10,
-                            content=Text(
-                                value=self.check,
-                                color=colors.BLACK,
-                                font_family=str(PoppinsFont.BOLD),
-                                size=16.01,
-                            )
-                        )
+                        self.checkContainer
                     ]
                 )
             ]
         )
+
+    def did_mount(self):
+        self.checkContainer.bgcolor = colors.GREEN if self.check == "CheckIn" else colors.RED
+        self.checkContainer.update()
 
 
 # endregion
@@ -1159,7 +1164,7 @@ class AddProjectDialog(AlertDialog):
         self.selectedEndDate: Text = Text(
             value="Pick end date",
             font_family=str(PoppinsFont.MEDIUM),
-            color = colors.WHITE
+            color=colors.WHITE
         )
         self.dialogImage = Image(
             src=f"../assets/eye.png",

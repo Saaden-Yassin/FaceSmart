@@ -74,7 +74,7 @@ def main(page: Page):
                             Container(
                                 margin=0,
                                 padding=0,
-                                image_src=f"../assets/bgLeftNavBar.jpg",
+                                image_src=f"../assets/BgImage.jpg",
                                 image_fit=ImageFit.COVER,
                                 expand=True,
                                 content=ResponsiveRow(
@@ -83,7 +83,7 @@ def main(page: Page):
                                     controls=[
                                         Container(
                                             col=2.3,
-                                            bgcolor=colors.with_opacity(color=colors.BLACK, opacity=0.7),
+                                            bgcolor=colors.with_opacity(color=colors.BLACK, opacity=0.6),
                                             content=leftNavigationBar,
                                         ),
                                         mainContentContainer

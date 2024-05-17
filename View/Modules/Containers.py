@@ -2,6 +2,11 @@ from PersonalControllers import *
 from PersonalEnums import AppColors
 from Controller.ManagerCRUD import *
 from Controller.ScheduleCRUD import *
+import base64
+from threading import Thread
+import cv2
+import face_recognition
+import numpy as np
 
 
 # region DashBoardContent
@@ -51,7 +56,6 @@ class DashBoardContent(Column):
                                                                 ),
                                                                 ElevatedButton(
                                                                     bgcolor=colors.TRANSPARENT,
-                                                                    # text=,
                                                                     color="#1D7D81",
                                                                     content=Text(
                                                                         value="View All",
@@ -170,14 +174,14 @@ class DashBoardContent(Column):
                                                 )
                                             ]
                                         ),
-                                        # EmployeesInOutContainer(
-                                        #     col=3,
-                                        #     employeeID=getLastCheckinOrLastCheckout()[0],
-                                        #     circleImageBase64Src=getLastCheckinOrLastCheckout()[1],
-                                        #     employeeName=getLastCheckinOrLastCheckout()[2],
-                                        #     hour=getLastCheckinOrLastCheckout()[3],
-                                        #     check=getLastCheckinOrLastCheckout()[4]
-                                        # )
+                                        EmployeesInOutContainer(
+                                            col=3,
+                                            employeeID=getLastCheckinOrLastCheckout()[0],
+                                            circleImageBase64Src=getLastCheckinOrLastCheckout()[1],
+                                            employeeName=getLastCheckinOrLastCheckout()[2],
+                                            hour=getLastCheckinOrLastCheckout()[3],
+                                            check=getLastCheckinOrLastCheckout()[4]
+                                        )
                                     ]
                                 )
                             ]
@@ -216,14 +220,14 @@ class EmployeesList(Container):
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="Image",
-                        color="#C55D42",
+                        color="#1D7D81",
                     ),
                 ),
                 DataColumn(
                     numeric=True,
                     label=TableHeadingContainer(
                         textValue="ID",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableSort=True,
                         onSortClick=lambda _: self.sortEmployeesList(sortCriteria="ID")
                     ),
@@ -231,7 +235,7 @@ class EmployeesList(Container):
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="First name",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableSort=True,
                         onSortClick=lambda _: self.sortEmployeesList(sortCriteria="firstName")
                     ),
@@ -239,7 +243,7 @@ class EmployeesList(Container):
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="Last name",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableSort=True,
                         onSortClick=lambda _: self.sortEmployeesList(sortCriteria="lastName")
                     ),
@@ -248,7 +252,7 @@ class EmployeesList(Container):
                     numeric=True,
                     label=TableHeadingContainer(
                         textValue="Age",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableSort=True,
                         onSortClick=lambda _: self.sortEmployeesList(sortCriteria="age")
                     ),
@@ -256,7 +260,7 @@ class EmployeesList(Container):
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="Email",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableSort=True,
                         onSortClick=lambda _: self.sortEmployeesList(sortCriteria="email")
                     ),
@@ -264,7 +268,7 @@ class EmployeesList(Container):
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="Department",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableSort=True,
                         onSortClick=lambda _: self.sortEmployeesList(sortCriteria="departmentId"),
                         enableFilter=True,
@@ -273,7 +277,7 @@ class EmployeesList(Container):
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="Current project",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableSort=True,
                         onSortClick=lambda _: self.sortEmployeesList(sortCriteria="projectId"),
                         enableFilter=True
@@ -282,14 +286,14 @@ class EmployeesList(Container):
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="Status",
-                        color="#C55D42",
+                        color="#1D7D81",
                         enableFilter=True
                     ),
                 ),
                 DataColumn(
                     label=TableHeadingContainer(
                         textValue="Delete",
-                        color="#C55D42",
+                        color="#1D7D81",
                     ),
                 )
             ],
@@ -469,145 +473,6 @@ class EmployeesList(Container):
 
 # endregion
 
-# region ManagerLogin
-class ManagerLogin(Container):
-    def __init__(self, bgColor: str = None, rootPage: Page = None):
-        super().__init__()
-        self.bgcolor = bgColor
-        self.padding = padding.only(left=20, right=20)
-        self.border_radius = 40
-        self.opacity = 1
-        self.animate_opacity = animation.Animation(duration=2000, curve=AnimationCurve.EASE)
-        self.tf_managerUsername = TextField(
-            label="Username",
-            color=colors.WHITE,
-            text_style=TextStyle(
-                font_family=str(PoppinsFont.MEDIUM),
-            ),
-            suffix_icon=icons.ACCOUNT_CIRCLE_ROUNDED,
-            border_color=colors.WHITE,
-            border_radius=20,
-        )
-        self.tf_managerPassword = TextField(
-            label="Password",
-            color=colors.WHITE,
-            text_style=TextStyle(
-                font_family=str(PoppinsFont.MEDIUM),
-            ),
-            password=True,
-            can_reveal_password=True,
-            border_color=colors.WHITE,
-            border_radius=20,
-        )
-        self.eb_login = self.login = ElevatedButton(
-            content=Text(
-                value="LogIn",
-                font_family=str(PoppinsFont.BOLD),
-                size=20,
-                color=colors.BLACK,
-            ),
-            style=ButtonStyle(
-                shape=RoundedRectangleBorder(radius=25)
-            ),
-            elevation=10,
-            bgcolor=colors.WHITE,
-            width=200,
-            height=55,
-            on_click=self.validateLogin,
-        )
-        self.eb_register = ElevatedButton(
-            bgcolor=colors.TRANSPARENT,
-            elevation=0,
-            content=Text(
-                value="Or register",
-                font_family=str(PoppinsFont.BOLD),
-                size=15,
-                color=colors.BLUE,
-            ),
-            style=ButtonStyle(
-                shape=RoundedRectangleBorder(radius=25),
-
-            ),
-            width=200,
-            height=55,
-        )
-        self.t_managerNotExist = Text(
-            color=colors.RED,
-            font_family=str(PoppinsFont.MEDIUM_ITALIC),
-        )
-        self.rootPage = rootPage
-        self.content = Column(
-            horizontal_alignment=CrossAxisAlignment.CENTER,
-            alignment=MainAxisAlignment.CENTER,
-            width=500,
-            height=500,
-            spacing=15,
-            controls=[
-                Container(
-                    margin=margin.only(bottom=50),
-                    content=Text(
-                        value="Login",
-                        text_align=TextAlign.CENTER,
-                        size=30,
-                    ),
-                ),
-                Container(
-                    margin=margin.only(bottom=15),
-                    content=self.tf_managerUsername,
-                ),
-                Container(
-                    margin=margin.only(bottom=15),
-                    content=self.tf_managerPassword,
-                ),
-                Row(
-                    alignment=MainAxisAlignment.SPACE_EVENLY,
-                    controls=[
-                        self.eb_login,
-                        self.eb_register
-                    ]
-                ),
-                self.t_managerNotExist,
-                ElevatedButton(
-                    text="Go to home page ->",
-                    on_click=lambda _: self.rootPage.go("/home"),
-                )
-            ]
-        )
-
-    def validateLogin(self, e):
-        username = self.tf_managerUsername.value
-        password = self.tf_managerPassword.value
-
-        if not ValidateReg.validate(username, ValidateReg.USERNAME.value[0]):
-            self.tf_managerUsername.error_text = ValidateReg.USERNAME.value[
-                1] if username else "Missing username"
-            self.tf_managerUsername.update()
-            flag = False
-        else:
-            self.tf_managerUsername.error_text = ""
-            self.tf_managerUsername.update()
-            flag = True
-        if not ValidateReg.validate(password, ValidateReg.PASSWORD.value[0]):
-            self.tf_managerPassword.error_text = ValidateReg.PASSWORD.value[1] if password else "Missing password"
-            self.tf_managerPassword.update()
-            flag = False
-        else:
-            self.tf_managerPassword.error_text = ""
-            self.tf_managerPassword.update()
-            flag = True
-        if flag:
-            if getManager(username=username, password=password):
-                self.page.session.set(key="username", value=username)
-                DashBoardContent.username = username
-                self.page.go("/home")
-                self.page.update()
-            else:
-                self.t_managerNotExist.value = "There is no manager with the given username and password !!!"
-                self.t_managerNotExist.update()
-
-
-# endregion
-
 # region ManagerRegister
 class ManagerRegister(Container):
     def __init__(self, rootPage: Page, bgColor: str = None):
@@ -618,7 +483,7 @@ class ManagerRegister(Container):
         self.border_radius = 40
         self.height = 800
         self.animate_opacity = animation.Animation(duration=2000, curve=AnimationCurve.EASE)
-        self.pickedEncodedImage = ""
+        self.pickedEncodedImage: str = ""
         self.tf_managerFirstName = TextField(
             label="First name",
             color=colors.WHITE,
@@ -706,6 +571,22 @@ class ManagerRegister(Container):
             width=200,
             height=55,
         )
+        self.eb_login = ElevatedButton(
+            bgcolor=colors.TRANSPARENT,
+            elevation=0,
+            content=Text(
+                value="Back to login",
+                font_family=str(PoppinsFont.BOLD),
+                size=15,
+                color="#1D7D81",
+            ),
+            style=ButtonStyle(
+                shape=RoundedRectangleBorder(radius=25),
+
+            ),
+            width=200,
+            height=55,
+        )
         self.localImagePicker = LocalImagePicker(
             rootPage=self.rootPage,
             margin_=margin.only(bottom=25),
@@ -727,7 +608,7 @@ class ManagerRegister(Container):
                 style=ButtonStyle(
                     bgcolor=colors.TRANSPARENT,
                     shape=RoundedRectangleBorder(radius=15),
-                    side=BorderSide(width=1, color=colors.BLACK),
+                    side=BorderSide(width=1, color=colors.WHITE),
                 )
             ),
             showPickedImageName=Text(
@@ -743,6 +624,13 @@ class ManagerRegister(Container):
             width=400,
             alignment=MainAxisAlignment.CENTER,
             controls=[
+                Container(
+                    margin=margin.only(top=15),
+                    content=Image(
+                        src=f"../assets/eye.png",
+                        filter_quality=FilterQuality.HIGH,
+                    ),
+                ),
                 Container(
                     margin=margin.only(bottom=50),
                     content=Text(
@@ -776,9 +664,14 @@ class ManagerRegister(Container):
                     content=self.tf_managerPassword,
                 ),
                 self.localImagePicker,
-                self.eb_register
+                self.eb_register,
+                self.eb_login
             ]
         )
+
+    def closeBanner(self, e):
+        self.rootPage.banner.open = False
+        self.rootPage.update()
 
     def validateRegister(self) -> bool:
         firstName = self.tf_managerFirstName.value
@@ -787,7 +680,8 @@ class ManagerRegister(Container):
         password = self.tf_managerPassword.value
         age = self.tf_managerAge.value
         email = self.tf_managerEmail.value
-        print("EImg -> ", self.pickedEncodedImage)
+        image = self.pickedEncodedImage
+        print("ManagerImg -> ", image)
         if not ValidateReg.validate(firstName, ValidateReg.FIRST_LAST_NAME.value[0]):
             self.tf_managerFirstName.error_text = ValidateReg.FIRST_LAST_NAME.value[
                 1] if firstName else "Missing first name!!!"
@@ -846,23 +740,219 @@ class ManagerRegister(Container):
             flag = True
 
         if flag:
-            if createManager(
-                    Manager(
-                        firstName=firstName,
-                        lastName=lastName,
-                        age=int(age),
-                        email=email,
-                        username=username,
-                        password=password,
-                        image=self.localImagePicker.getPickedEncodedImage()
-                    )
-            ):
-                flag = True
+            if not getManager(username=username, password=password, image=image):
+                if createManager(
+                        Manager(
+                            firstName=firstName,
+                            lastName=lastName,
+                            age=int(age),
+                            email=email,
+                            username=username,
+                            password=password,
+                            image=self.localImagePicker.getPickedEncodedImage()
+                        )
+                ):
+                    flag = True
+                else:
+                    flag = False
             else:
+                self.rootPage.banner = Banner(
+                    bgcolor=colors.PINK_200,
+                    leading=Icon(
+                        icons.WARNING_AMBER_ROUNDED,
+                        color=colors.PINK_600,
+                        size=45
+                    ),
+                    content=Text(
+                        value="Oops, manager already exists",
+                        font_family=str(PoppinsFont.BOLD),
+                        color=colors.PINK_600
+                    ),
+                    actions=[
+                        TextButton(
+                            on_click=self.closeBanner,
+                            content=Text(
+                                value="Close",
+                                font_family=str(PoppinsFont.BOLD),
+                                color=colors.PINK_800
+                            )
+                        ),
+                    ],
+                )
+                self.rootPage.banner.open = True
+                self.rootPage.update()
                 flag = False
         return flag
 
     # endregion
+
+
+# endregion
+
+# region ManagerLogin
+class ManagerLogin(Container):
+    def __init__(self, bgColor: str = None, rootPage: Page = None):
+        super().__init__()
+        self.bgcolor = bgColor
+        self.padding = padding.only(left=20, right=20)
+        self.border_radius = 40
+        self.opacity = 1
+        self.animate_opacity = animation.Animation(duration=2000, curve=AnimationCurve.EASE)
+        self.tf_managerUsername = TextField(
+            label="Username",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            suffix_icon=icons.ACCOUNT_CIRCLE_ROUNDED,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.tf_managerPassword = TextField(
+            label="Password",
+            color=colors.WHITE,
+            text_style=TextStyle(
+                font_family=str(PoppinsFont.MEDIUM),
+            ),
+            password=True,
+            can_reveal_password=True,
+            border_color=colors.WHITE,
+            border_radius=20,
+        )
+        self.eb_login = ElevatedButton(
+            content=Text(
+                value="LogIn",
+                font_family=str(PoppinsFont.BOLD),
+                size=20,
+                color=colors.BLACK,
+            ),
+            style=ButtonStyle(
+                shape=RoundedRectangleBorder(radius=25)
+            ),
+            elevation=10,
+            bgcolor=colors.WHITE,
+            width=200,
+            height=55,
+            on_click=self.validateLogin,
+        )
+        self.eb_register = ElevatedButton(
+            bgcolor=colors.TRANSPARENT,
+            elevation=0,
+            content=Text(
+                value="Or register",
+                font_family=str(PoppinsFont.BOLD),
+                size=15,
+                color="#1D7D81",
+            ),
+            style=ButtonStyle(
+                shape=RoundedRectangleBorder(radius=25),
+
+            ),
+            width=200,
+            height=55,
+        )
+        self.rootPage = rootPage
+        self.content = Column(
+            horizontal_alignment=CrossAxisAlignment.CENTER,
+            alignment=MainAxisAlignment.CENTER,
+            width=500,
+            height=600,
+            spacing=15,
+            controls=[
+                Container(
+                    margin=margin.only(top=15),
+                    content=Image(
+                        src=f"../assets/eye.png",
+                        filter_quality=FilterQuality.HIGH,
+                    ),
+                ),
+                Container(
+                    margin=margin.only(bottom=50),
+                    content=Text(
+                        value="Login",
+                        text_align=TextAlign.CENTER,
+                        size=30,
+                    ),
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerUsername,
+                ),
+                Container(
+                    margin=margin.only(bottom=15),
+                    content=self.tf_managerPassword,
+                ),
+                Row(
+                    alignment=MainAxisAlignment.SPACE_EVENLY,
+                    controls=[
+                        self.eb_login,
+                        self.eb_register
+                    ]
+                ),
+                # ElevatedButton(
+                #     text="Go to home page ->",
+                #     on_click=lambda _: self.rootPage.go("/home"),
+                # )
+            ]
+        )
+
+    def closeBanner(self, e):
+        self.rootPage.banner.open = False
+        self.rootPage.update()
+
+    def validateLogin(self, e):
+        username = self.tf_managerUsername.value
+        password = self.tf_managerPassword.value
+
+        if not ValidateReg.validate(username, ValidateReg.USERNAME.value[0]):
+            self.tf_managerUsername.error_text = ValidateReg.USERNAME.value[
+                1] if username else "Missing username"
+            self.tf_managerUsername.update()
+            flag = False
+        else:
+            self.tf_managerUsername.error_text = ""
+            self.tf_managerUsername.update()
+            flag = True
+        if not ValidateReg.validate(password, ValidateReg.PASSWORD.value[0]):
+            self.tf_managerPassword.error_text = ValidateReg.PASSWORD.value[1] if password else "Missing password"
+            self.tf_managerPassword.update()
+            flag = False
+        else:
+            self.tf_managerPassword.error_text = ""
+            self.tf_managerPassword.update()
+            flag = True
+        if flag:
+            if getManager(username=username, password=password):
+                self.page.session.set(key="username", value=username)
+                DashBoardContent.username = username
+                self.page.go("/home")
+                self.page.update()
+            else:
+                self.rootPage.banner = Banner(
+                    bgcolor=colors.PINK_200,
+                    leading=Icon(
+                        icons.WARNING_AMBER_ROUNDED,
+                        color=colors.PINK_600,
+                        size=45
+                    ),
+                    content=Text(
+                        value="Oops, there is no manager with the given username and password",
+                        font_family=str(PoppinsFont.BOLD),
+                        color=colors.PINK_600
+                    ),
+                    actions=[
+                        TextButton(
+                            on_click=self.closeBanner,
+                            content=Text(
+                                value="Close",
+                                font_family=str(PoppinsFont.BOLD),
+                                color=colors.PINK_800
+                            )
+                        ),
+                    ],
+                )
+                self.rootPage.banner.open = True
+                self.rootPage.update()
 
 
 # endregion
@@ -872,7 +962,7 @@ class ManagerTransactions(Container):
     def __init__(self, rootPage: Page):
         super().__init__()
         self.alignment = alignment.center
-        self.image_src = f"../assets/bgLeftNavBar.jpg"
+        self.image_src = f"../assets/BgImage.jpg"
         self.image_fit = ImageFit.COVER
         self.rootPage = rootPage
         self.expand = True
@@ -881,12 +971,12 @@ class ManagerTransactions(Container):
             rootPage=self.rootPage
         )
         self.managerLogin.eb_register.on_click = self.switchToRegister
-        # self.managerLogin.eb_register.on_click = lambda _: self.rootPage.go("/home")
         self.managerRegister = ManagerRegister(
             rootPage=self.rootPage,
             bgColor=colors.with_opacity(opacity=0.7, color=colors.BLACK)
         )
-        self.managerRegister.eb_register.on_click = self.switchToLogin
+        self.managerRegister.eb_register.on_click = self.switchToLoginWithVerification
+        self.managerRegister.eb_login.on_click = self.switchToLogin
         self.managerRegister.visible = False
         self.managerRegister.opacity = 0
         self.stack = Stack(
@@ -909,18 +999,21 @@ class ManagerTransactions(Container):
         self.managerRegister.opacity = 1
         self.managerRegister.update()
 
-    def switchToLogin(self, e):
+    def switchToLoginWithVerification(self, e):
         if self.managerRegister.validateRegister():
-            self.managerRegister.opacity = 0
-            self.managerRegister.update()
-            sleep(0.9)
-            self.managerRegister.visible = False
-            self.managerRegister.update()
-            self.managerLogin.visible = True
-            self.managerLogin.update()
-            sleep(0.9)
-            self.managerLogin.opacity = 1
-            self.managerLogin.update()
+            self.switchToLogin(e)
+
+    def switchToLogin(self, e):
+        self.managerRegister.opacity = 0
+        self.managerRegister.update()
+        sleep(0.9)
+        self.managerRegister.visible = False
+        self.managerRegister.update()
+        self.managerLogin.visible = True
+        self.managerLogin.update()
+        sleep(0.9)
+        self.managerLogin.opacity = 1
+        self.managerLogin.update()
 
     # endregion
 
@@ -943,6 +1036,7 @@ class ProjectList(Container):
                         textValue="ID",
                         enableSort=True,
                         onSortClick=lambda _: self.sortProjectsList(sortCriteria="ID"),
+                        color="#1D7D81",
                     )
                 ),
                 DataColumn(
@@ -950,6 +1044,7 @@ class ProjectList(Container):
                         textValue="Project name",
                         enableSort=True,
                         onSortClick=lambda _: self.sortProjectsList(sortCriteria="name"),
+                        color="#1D7D81",
                     )
                 ),
                 DataColumn(
@@ -957,6 +1052,7 @@ class ProjectList(Container):
                         textValue="Start date",
                         enableSort=True,
                         onSortClick=lambda _: self.sortProjectsList(sortCriteria="startDate"),
+                        color="#1D7D81",
                     )
                 ),
                 DataColumn(
@@ -964,17 +1060,20 @@ class ProjectList(Container):
                         textValue="End date",
                         enableSort=True,
                         onSortClick=lambda _: self.sortProjectsList(sortCriteria="endDate"),
+                        color="#1D7D81",
                     )
                 ),
                 DataColumn(
                     TableHeadingContainer(
                         textValue="Status",
                         enableFilter=True,
+                        color="#1D7D81",
                     )
                 ),
                 DataColumn(
                     TableHeadingContainer(
                         textValue="Delete",
+                        color="#1D7D81",
                     )
                 )
             ],
@@ -1187,9 +1286,60 @@ class Camera(Container):
             ]
         )
 
+    # region loadEmployeesFaceEncodings
+    @staticmethod
+    def loadEmployeesFaceEncodings():
+        employeeImages = getEmployeesImages()
+        employeesFaceEncodings = []
+        employeeIds = []
+        for data in employeeImages:
+            # Decode the base64 encoded image
+            imageData = base64.b64decode(data["image"])
+            # Convert bytes to numpy array
+            npArray = np.frombuffer(imageData, np.uint8)
+            # Decode numpy array to image
+            employeeImage = cv2.imdecode(npArray, cv2.IMREAD_COLOR)
+            # Get face encodings if a face is detected
+            face_encodings = face_recognition.face_encodings(employeeImage)
+            if face_encodings:
+                faceEncoding = face_encodings[0]  # Take the first detected face
+                employeesFaceEncodings.append(faceEncoding)
+                employeeIds.append(data["id"])
+            else:
+                print("No face detected for employee with ID:", data["id"])
+        return employeesFaceEncodings, employeeIds
+
+    # endregion
+
+    # region recognizeFaces
+    # Function to recognize faces and return existence status, employee ID
+    @staticmethod
+    def recognizeFaces(rgb_image, image, known_face_encodings, employee_ids):
+        face_locations = face_recognition.face_locations(rgb_image)
+        face_encodings = face_recognition.face_encodings(rgb_image, face_locations)
+
+        for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+            # Compare face encoding with the known face encodings
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+
+            # If there is a match
+            if True in matches:
+                # Find the index of the matched face
+                match_index = matches.index(True)
+                cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
+                # Get employee ID
+                employee_id = employee_ids[match_index]
+                return True, employee_id
+            else:
+                cv2.rectangle(image, (left, top), (right, bottom), (0, 0, 255), 2)
+        # If no match found
+        return False, None
+
+    # endregion
+
     # region Check In
     def checkIn(self):
-        known_face_encodings, employee_ids = loadEmployeesFaceEncodings()
+        known_face_encodings, employee_ids = Camera.loadEmployeesFaceEncodings()
         # Initialize the camera
         cam = cv2.VideoCapture(0)
         # Set webcam resolution
@@ -1206,14 +1356,12 @@ class Camera(Container):
                 rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
                 # Detect faces and recognize
-                exists, employee_id = recognize_faces(rgb_image, image, known_face_encodings,
-                                                      employee_ids)
+                exists, employee_id = Camera.recognizeFaces(rgb_image, image, known_face_encodings,
+                                                            employee_ids)
 
                 if exists:
                     Thread(target=scheduleCheckIn, args=[employee_id], daemon=True).start()
-                    # print(f"CheckIn -> Employee ID : {employee_id} ")
-                    # self.showCheckMessage.value = f"CheckIn -> Employee ID : {employee_id}"
-                    # self.showCheckMessage.update()
+                    self.page.update()
                 # Show the image
                 cv2.imshow("Face Recognition", image)
 
@@ -1227,8 +1375,7 @@ class Camera(Container):
 
     # region check Out
     def checkOut(self):
-
-        known_face_encodings, employee_ids = loadEmployeesFaceEncodings()
+        known_face_encodings, employee_ids = Camera.loadEmployeesFaceEncodings()
         # Initialize the camera
         cam = cv2.VideoCapture(0)
         # Set webcam resolution
@@ -1245,15 +1392,12 @@ class Camera(Container):
                 rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
                 # Detect faces and recognize
-                exists, employee_id = recognize_faces(rgb_image, image, known_face_encodings,
-                                                      employee_ids)
+                exists, employee_id = Camera.recognizeFaces(rgb_image, image, known_face_encodings,
+                                                            employee_ids)
 
                 if exists:
-                    # print(f"CheckOut -> Employee ID : {employee_id}")
-
                     Thread(target=scheduleCheckOut, args=[employee_id], daemon=True).start()
-                    # self.showCheckMessage.value = f"CheckOut -> Employee ID : {employee_id} | Check date: {current_date}"
-                    # self.showCheckMessage.update()
+                    self.page.update()
                 # Show the image
                 cv2.imshow("Face Recognition", image)
 

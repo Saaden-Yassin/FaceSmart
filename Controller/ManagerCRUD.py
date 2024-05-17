@@ -80,7 +80,7 @@ def deleteManager(ID: int):
 
 # region signin!!!
 def getManager(username: str = None, password: str = None, image: str = None):
-    if not (username and password) and not image:
+    if not (username and password):
         print("Invalid parameters provided.")
         return False
 
@@ -109,4 +109,18 @@ def getManager(username: str = None, password: str = None, image: str = None):
             return False
 
 
+# endregion
+
+# region getEmployeesImages
+def getEmployeesImages() -> list[dict] | None:
+    try:
+        cursor.execute("""SELECT ID, image FROM EMPLOYEES""")
+        employeesImagesAndIDs = []
+        rows = cursor.fetchall()
+        for row in rows:
+            employeesImagesAndIDs.append({"id": row[0], "image": row[1]})
+        return employeesImagesAndIDs
+    except sqlite3.Error as e:
+        print("Error retrieving employees' images:", e)
+        return None
 # endregion

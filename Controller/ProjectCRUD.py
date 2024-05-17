@@ -145,7 +145,6 @@ def getTimeLeftForDeadline(project: Project) -> int | None:
         currentDate = datetime.now()
         timeLeft = endDate - currentDate
         daysLeft = timeLeft.days
-        print(f"Days left for project '{project.name}' deadline: {daysLeft}")
         return daysLeft
     except Exception as e:
         print(f"An error occurred while calculating time left for deadline: {e}")
@@ -190,6 +189,7 @@ def getProjectsTableSorted(criteria: str = "ID", sortMode: str = "ASC") -> list[
 
 # endregion
 
+# region getProjectById
 def getProjectById(projectID: int) -> Project | None:
     cursor.execute("""SELECT * FROM PROJECTS WHERE ID = ? """, (projectID,))
     project = cursor.fetchone()
@@ -199,6 +199,9 @@ def getProjectById(projectID: int) -> Project | None:
         return None
 
 
+# endregion
+
+# region getSortedProjectByDayLeft
 def getSortedProjectByDayLeft() -> list[Project] | None:
     if getProjects():
         projectsDict = {}
@@ -214,3 +217,4 @@ def getSortedProjectByDayLeft() -> list[Project] | None:
         return projectsList
     else:
         return None
+# endregion
